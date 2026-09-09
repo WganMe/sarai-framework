@@ -17,6 +17,7 @@ datasets/real_infra_runs/
 datasets/benchmark_results_*.json
 datasets/analysis_results.json
 datasets/metadata/source_validation_report.json
+datasets/metadata/*.json
 
 # Generated figures and local logs
 *.pdf
