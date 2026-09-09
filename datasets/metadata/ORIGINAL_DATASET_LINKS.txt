@@ -1,0 +1,21 @@
+ORIGINAL DATASET LINKS (used by SARAI benchmark domains)
+
+1) E-Commerce (Olist)
+   Source: https://www.kaggle.com/datasets/olistbr/brazilian-ecommerce
+
+2) Healthcare
+   Source: https://www.kaggle.com/datasets/prasad22/healthcare-dataset
+
+3) Retail (Online Retail)
+   Source: https://archive.ics.uci.edu/dataset/352/online+retail
+
+4) Financial (Credit Card Fraud Detection)
+   Source: https://www.kaggle.com/datasets/mlg-ulb/creditcardfraud
+
+5) Supply Chain (DataCo Smart Supply Chain)
+   Source: https://www.kaggle.com/datasets/shashwatwork/dataco-smart-supply-chain-for-big-data-analysis
+
+Verification files:
+- /var/www/datasets/metadata/dataset_provenance_registry.csv
+- /var/www/datasets/metadata/dataset_provenance_registry.json
+- /var/www/datasets/raw_tables_manifest.json

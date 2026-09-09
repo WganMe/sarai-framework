@@ -1,0 +1,29 @@
+# Secrets and local configuration
+framework/.env
+*.secret
+*.key
+
+# Python and local tooling
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+
+# Raw datasets and generated benchmark outputs
+datasets/raw_tables/
+datasets/*.json
+datasets/real_infra_runs/
+datasets/benchmark_results_*.json
+datasets/analysis_results.json
+datasets/metadata/source_validation_report.json
+
+# Generated figures and local logs
+*.pdf
+*.png
+*.log
+*.aux
+*.bbl
+*.blg
+*.out
+*.toc
