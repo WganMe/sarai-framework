@@ -87,10 +87,8 @@ def load_postgres():
     conn.autocommit = True
     cur = conn.cursor()
     cur.execute("CREATE SCHEMA IF NOT EXISTS public")
-    # copy_from builds its own quoted identifier, and it resolves the name on the
-    # search_path. Without this, psycopg2 sends `"fin_transactions"` and PostgreSQL
-    # looks for a table literally named with quotes -- error:
-    #   relation ""fin_transactions"" does not exist
+    # The COPY below names the table unqualified, so it resolves on the
+    # search_path -- which would otherwise be the role's default.
     cur.execute("SET search_path TO public")
     total = 0
     files = _table_files("postgresql")
@@ -105,12 +103,16 @@ def load_postgres():
             f'CREATE TABLE public."{table}" (' +
             ", ".join(f'"{c}" {TEXT}' for c in cols) + ")"
         )
-        # copy_from streams the file straight in; the handle is positioned just
-        # past the header line so it is not loaded as a data row. Pass the BARE
-        # name: copy_from adds the quoting itself.
-        fh = _skip_header(path)
+        # Use COPY ... FORMAT csv, not copy_from. The review text contains commas
+        # inside quoted fields -- e.g.
+        #   3,2,1,,"Comprei 02 computadores, e um ..."
+        # and copy_from splits on the separator without honouring CSV quoting, so
+        # it fails with "missing data for column ...". FORMAT csv parses quoting
+        # properly, and HEADER true makes the server skip the header row.
+        fh = _open_all(path)
         try:
-            cur.copy_from(fh, table, sep=",", null="")
+            cur.copy_expert(
+                f'COPY "{table}" FROM STDIN WITH (FORMAT csv, HEADER true)', fh)
         finally:
             _cleanup(fh)
         cur.execute(f'SELECT count(*) FROM public."{table}"')
@@ -119,6 +121,13 @@ def load_postgres():
         print(f"  postgresql.public.{table:<24} {n:>9,} rows")
     conn.close()
     return total
+
+
+def _open_all(path: Path):
+    """Open the whole file for a COPY, decompressing a .csv.gz if needed."""
+    if path.suffix == ".gz":
+        return gzip.open(path, "rt", newline="", encoding="utf-8", errors="replace")
+    return path.open(newline="", encoding="utf-8", errors="replace")
 
 
 def _skip_header(path: Path):
