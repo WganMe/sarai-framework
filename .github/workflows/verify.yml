@@ -132,11 +132,9 @@ jobs:
             - name: Start the federated stack
               run: |
                   docker compose up -d
-                  for i in $(seq 1 60); do
-                    if curl -fsS http://localhost:8080/v1/info >/dev/null 2>&1; then break; fi
-                    [ "$i" = 60 ] && { echo "engine did not come up"; docker compose logs presto | tail -40; exit 1; }
-                    sleep 5
-                  done
+                  # /v1/info answers 200 with "starting": true before the engine
+                  # can serve queries, so wait on that flag, not the status code.
+                  python3 tools/wait_for_engine.py
                   curl -fsS http://localhost:8080/v1/info | head -c 200; echo
 
             # Load from datasets/sources/ -- the files the previous step fetched,

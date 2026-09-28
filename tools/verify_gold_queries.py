@@ -20,6 +20,7 @@ import json
 import os
 import sys
 import time
+import urllib.request
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -43,7 +44,26 @@ def main():
         sys.exit(f"no BENCHMARK list in {MODULE}")
 
     engine = os.environ.get("FEDERATION_URL", "http://127.0.0.1:8080")
-    print(f"verifying {len(bench)} gold queries against {engine}\n")
+
+    # Fail early and legibly if the engine is not answering JSON. Otherwise the
+    # raw decoder error ("Expecting value: line 1 column 1") appears once per
+    # question and says nothing about the actual problem, which is almost always
+    # that the engine is still starting up.
+    try:
+        with urllib.request.urlopen(f"{engine}/v1/info", timeout=10) as r:
+            info = json.loads(r.read().decode())
+    except Exception as exc:
+        sys.exit(f"the engine at {engine} is not answering /v1/info as JSON: "
+                 f"{type(exc).__name__}: {exc}\n"
+                 "  wait for it with:  python3 tools/wait_for_engine.py\n"
+                 "  or start the stack: docker compose up -d")
+    if info.get("starting", True):
+        sys.exit(f"the engine at {engine} is up but still starting "
+                 f"(uptime {info.get('uptime', '?')}); queries cannot run yet.\n"
+                 "  wait for it with:  python3 tools/wait_for_engine.py")
+
+    print(f"verifying {len(bench)} gold queries against {engine}"
+          f" (engine {info.get('nodeVersion', {}).get('version', '?')})\n")
 
     passed, failures = 0, []
     t0 = time.time()

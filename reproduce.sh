@@ -43,13 +43,14 @@ if ! command -v docker >/dev/null 2>&1; then
 fi
 docker compose up -d
 
-say "waiting for the federation engine to accept queries"
-for i in $(seq 1 60); do
-  if curl -fsS http://localhost:8080/v1/info >/dev/null 2>&1; then break; fi
-  [ "$i" = 60 ] && { echo "engine did not come up"; docker compose logs presto | tail -30; exit 1; }
-  sleep 5
-done
-curl -fsS http://localhost:8080/v1/info | head -c 200; echo
+say "waiting for the federation engine to become ready"
+# /v1/info returns 200 with "starting": true before the engine can answer
+# queries, so wait on that flag rather than on the HTTP status code.
+"$PY" tools/wait_for_engine.py || {
+  echo "engine did not become ready; last container output:"
+  docker compose logs presto | tail -30
+  exit 1
+}
 
 # The engine is the one product the manuscript and the patent disagree on, so
 # record which one actually ran. PrestoDB and Trino report different values here.
