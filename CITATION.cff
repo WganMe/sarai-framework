@@ -1,0 +1,44 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+title: "SARAI: A Sovereignty-Aware Federated Business Intelligence Framework for Reliable Text-to-SQL Decision Support"
+abstract: >-
+  Companion software artefact for the SARAI manuscript. A Design Science
+  Research artefact that federates PostgreSQL and MariaDB behind a single SQL
+  endpoint and adds four proactive reliability mechanisms, evaluated against a
+  stratified benchmark of 50 federated questions across five business domains
+  and five complexity tiers, 24 of which require a genuine cross-engine join.
+  50/50 gold queries execute and satisfy their own validators in about 60 s; the
+  SQL anomaly detector reaches F1 = 0.980 on adversarial injection workloads.
+  The analysis half of reproducibility runs anywhere, and the data half runs
+  against PrestoDB 0.284; both run in continuous integration.
+type: software
+license: CC-BY-4.0
+version: "1.0.0"
+date-released: "2026-09-28"
+repository-code: "https://github.com/WganMe/sarai-framework"
+keywords:
+  - federated text-to-SQL
+  - business intelligence
+  - data sovereignty
+  - design science research
+  - reproducibility
+  - PrestoDB
+  - cross-engine query federation
+  - SQL anomaly detection
+authors:
+  - family-names: Alnahari
+    given-names: Wael
+    orcid: "https://orcid.org/0000-0001-5247-3713"
+    affiliation: "Department of Computer Science, College of Computer and Information Systems, Umm Al-Qura University, Mecca 24381, Saudi Arabia"
+  - family-names: Arbaaeen
+    given-names: Ammar
+    orcid: "https://orcid.org/0000-0003-2165-3185"
+    affiliation: "Department of Computer Science, College of Computer and Information Systems, Umm Al-Qura University, Mecca 24381, Saudi Arabia"
+  - family-names: Hasanin
+    given-names: Tawfiq
+    orcid: "https://orcid.org/0000-0003-1072-278X"
+    affiliation: "Department of Information Systems, Faculty of Computing and Information Technology, King Abdulaziz University, Jeddah 21589, Saudi Arabia"
+  - family-names: Jambi
+    given-names: Sahar
+    orcid: "https://orcid.org/0009-0006-5390-1656"
+    affiliation: "Department of Information Systems, Faculty of Computing and Information Technology, King Abdulaziz University, Jeddah 21589, Saudi Arabia"

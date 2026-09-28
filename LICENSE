@@ -1,0 +1,33 @@
+# SARAI: Sovereignty-Aware Risk Assessment Infrastructure
+
+Copyright (c) 2026 Wael Alnahari, Ammar Arbaaeen, Tawfiq Hasanin, Sahar Jambi
+
+This work is licensed under the Creative Commons Attribution 4.0 International
+Licence (CC BY 4.0). To view a copy of this licence, visit
+<https://creativecommons.org/licenses/by/4.0/>.
+
+You are free to share and adapt the material for any purpose, including
+commercially, provided you give appropriate credit, link to the licence, and
+indicate whether changes were made.
+
+## Source data licences
+
+The five public datasets this work federates over are **not** redistributed
+under the licence above. They are fetched separately and keep their own terms:
+
+| Domain | Source | Licence |
+| --- | --- | --- |
+| E-Commerce | Kaggle `olistbr/brazilian-ecommerce` | CC BY-NC-SA 4.0 |
+| Healthcare | Kaggle `prasad22/healthcare-dataset` | CC0-1.0 |
+| Retail | UCI dataset 352 `online+retail` | CC BY 4.0 |
+| Financial | Kaggle `mlg-ulb/creditcardfraud` | DbCL-1.0 |
+| Supply Chain | Kaggle `shashwatwork/dataco-smart-supply-chain-for-big-data-analysis` | CC BY-NC-SA 4.0 |
+
+Note the two non-commercial sources: this repository's CC BY 4.0 licence applies
+to the code, not to those datasets.
+
+## Third-party components the deployment uses
+
+PrestoDB, PostgreSQL, MariaDB, Ollama and the dashboard platform are separate
+projects under their own licences and are not distributed here; they are pulled
+as container images or installed separately.
