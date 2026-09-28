@@ -54,6 +54,11 @@ def _read_header(path: Path):
         return next(csv.reader(fh))
 
 
+def _table_name(p: Path) -> str:
+    """Table name from a file name, handling both .csv and .csv.gz."""
+    return p.name[:-7] if p.name.endswith(".csv.gz") else p.name[:-4]
+
+
 def _table_files(subdir: str):
     """CSVs under raw_tables/<subdir>, accepting .csv and .csv.gz.
 
@@ -82,13 +87,18 @@ def load_postgres():
     conn.autocommit = True
     cur = conn.cursor()
     cur.execute("CREATE SCHEMA IF NOT EXISTS public")
+    # copy_from builds its own quoted identifier, and it resolves the name on the
+    # search_path. Without this, psycopg2 sends `"fin_transactions"` and PostgreSQL
+    # looks for a table literally named with quotes -- error:
+    #   relation ""fin_transactions"" does not exist
+    cur.execute("SET search_path TO public")
     total = 0
     files = _table_files("postgresql")
     if not files:
         sys.exit(f"no CSVs found under {RAW / 'postgresql'}\n"
                  "  fetch them first:  python3 tools/fetch_datasets.py")
     for path in files:
-        table = path.stem
+        table = _table_name(path)
         cols = _read_header(path)
         cur.execute(f'DROP TABLE IF EXISTS public."{table}" CASCADE')
         cur.execute(
@@ -96,10 +106,11 @@ def load_postgres():
             ", ".join(f'"{c}" {TEXT}' for c in cols) + ")"
         )
         # copy_from streams the file straight in; the handle is positioned just
-        # past the header line so it is not loaded as a data row.
+        # past the header line so it is not loaded as a data row. Pass the BARE
+        # name: copy_from adds the quoting itself.
         fh = _skip_header(path)
         try:
-            cur.copy_from(fh, f'"{table}"', sep=",", null="")
+            cur.copy_from(fh, table, sep=",", null="")
         finally:
             _cleanup(fh)
         cur.execute(f'SELECT count(*) FROM public."{table}"')
@@ -151,7 +162,7 @@ def load_mariadb():
         sys.exit(f"no CSVs found under {RAW / 'mysql'}\n"
                  "  fetch them first:  python3 tools/fetch_datasets.py")
     for path in files:
-        table = path.name[:-4] if path.name.endswith(".csv") else path.name[:-7]
+        table = _table_name(path)
         cols = _read_header(path)
         cur.execute(f"DROP TABLE IF EXISTS `{table}`")
         cur.execute(
