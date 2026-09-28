@@ -1,6 +1,6 @@
 cff-version: 1.2.0
 message: "If you use this software, please cite it as below."
-title: "SARAI: A Sovereignty-Aware Federated Business Intelligence Framework for Reliable Text-to-SQL Decision Support"
+title: "SARAI: Sovereignty-Aware Risk Assessment Infrastructure for Reliable Federated Business Intelligence"
 abstract: >-
   Companion software artefact for the SARAI manuscript. A Design Science
   Research artefact that federates PostgreSQL and MariaDB behind a single SQL
