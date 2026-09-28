@@ -1,166 +1,331 @@
 #!/usr/bin/env python3
 """
-Fetch the five public datasets that the benchmark federates over.
+Fetch the five public source datasets the benchmark federates over, laid out
+exactly where `framework/load_all_domains.py` expects to read them.
 
-Four are on Kaggle and need an API token; one is on UCI and needs nothing. The
-provenance file `datasets/metadata/ORIGINAL_DATASET_LINKS.txt` is the source of
-truth for the URLs.
-
-    export KAGGLE_API_TOKEN=...      # from kaggle.com -> Settings -> API
     python3 tools/fetch_datasets.py
 
-    # only the source that needs no token:
+    # just the source that needs no token:
     python3 tools/fetch_datasets.py --only uci
 
-Why the data is not committed: 371 MB uncompressed (100 MB gzipped) is too large
-for a repository. `docker-compose.yml` mounts `datasets/raw_tables/`, so this
-script only has to put the CSV (or .csv.gz) files there and the stack can use
-them. The loader accepts both forms.
+WHERE THINGS GO
+    datasets/sources/healthcare/healthcare_dataset.csv
+    datasets/sources/retail/data.csv
+    datasets/sources/financial/creditcard.csv
+    datasets/sources/supply_chain/DataCoSupplyChainDataset.csv
+    datasets/sources/olist/olist_orders_dataset.csv   (9 files, names as published)
+
+Those names and sub-directories are not free choices: they are what
+`load_all_domains.py` opens, so changing them here silently breaks the ETL.
+
+WHY THE DATA IS NOT IN THE REPOSITORY
+    371 MB uncompressed. `datasets/sources/` is gitignored; this script fetches it.
+
+AUTHENTICATION
+    The `kaggle` CLI authenticates from ~/.kaggle/kaggle.json, or from the
+    KAGGLE_USERNAME and KAGGLE_KEY environment variables. KAGGLE_API_TOKEN is not
+    a CLI variable, so this script maps it onto those two when it is a
+    `username:key` pair. A bare token with no username cannot be mapped; the
+    script says so rather than failing obscurely.
 
 EXIT CODES
-    0  every requested source is present
-    2  a source could not be fetched (message says which, and why)
+    0  every expected file is present
+    2  something is missing or unreadable (the message names it)
 """
+from __future__ import annotations
+
 import argparse
 import gzip
+import json
 import os
 import shutil
 import subprocess
 import sys
+import tarfile
+import tempfile
 import urllib.request
+import zipfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-RAW = Path(os.environ.get("RAW_TABLES_DIR", ROOT / "datasets" / "raw_tables"))
+SOURCES = Path(os.environ.get("SOURCES_DIR", ROOT / "datasets" / "sources"))
+# The bundle must live OUTSIDE the checkout: it is 143 MB, over GitHub's 100 MB
+# per-file limit, so committing it would be rejected. Default to the system temp
+# directory; override with BUNDLE_DIR if you want it kept between runs.
+BUNDLE_DIR = Path(os.environ.get("BUNDLE_DIR", Path(tempfile.gettempdir()) / "sarai-bundles"))
 UCI_RETAIL_URL = "https://archive.ics.uci.edu/static/public/352/online+retail.zip"
 
-# Kaggle datasets the benchmark uses, by slug. `files` lists the CSVs to keep;
-# an empty list means "take every CSV in the dataset".
+# The frozen source bundle. Published as a release asset because 371 MB is far
+# too large for the tree, and freezing matters: a newer Kaggle revision changes
+# row counts and makes the gold-query validators fail in a way that looks like a
+# code bug. This is the preferred source because it needs no Kaggle token.
+RELEASE_REPO = os.environ.get("SARAI_REPO", "WganMe/sarai-framework")
+RELEASE_TAG = "datasets-v1"
+ASSET_NAME = "sarai-datasets-v1.tar.gz"
+
+# slug -> destination sub-directory under datasets/sources/
 KAGGLE = [
-    ("olistbr/brazilian-ecommerce", "mysql/olist_ecommerce", []),
-    ("prasad22/healthcare-dataset", "mysql/healthcare", []),
-    ("mlg-ulb/creditcardfraud", "postgresql/public", []),
-    ("shashwatwork/dataco-smart-supply-chain-for-big-data-analysis",
-     "postgresql/public", []),
+    ("olistbr/brazilian-ecommerce", "olist"),
+    ("prasad22/healthcare-dataset", "healthcare"),
+    ("mlg-ulb/creditcardfraud", "financial"),
+    ("shashwatwork/dataco-smart-supply-chain-for-big-data-analysis", "supply_chain"),
+]
+
+# The exact paths load_all_domains.py opens, relative to datasets/sources/.
+EXPECTED = [
+    "healthcare/healthcare_dataset.csv",
+    "retail/data.csv",
+    "financial/creditcard.csv",
+    "supply_chain/DataCoSupplyChainDataset.csv",
+    "olist/olist_orders_dataset.csv",
+    "olist/olist_order_items_dataset.csv",
+    "olist/olist_customers_dataset.csv",
+    "olist/olist_products_dataset.csv",
 ]
 
 
-def _say(msg):
+def say(msg):
     print(f"  {msg}")
 
 
-def _gunzip_in_place(path: Path):
-    """Decompress a .csv.gz next to itself and remove the archive."""
-    out = path.with_suffix("")           # strip .gz
-    with gzip.open(path, "rb") as src, out.open("wb") as dst:
-        shutil.copyfileobj(src, dst)
-    path.unlink()
-    return out
+# --------------------------------------------------------------------- helpers
+def fetch_release_bundle() -> int:
+    """Download and extract the frozen bundle from the release.
+
+    Preferred over the per-source route: it is one request, needs no Kaggle
+    token, and is pinned to the revisions the reported row counts were measured
+    against. Uses `gh` when available (which authenticates from GITHUB_TOKEN in
+    CI, or locally from `gh auth login`), falling back to curl with a token.
+    """
+    SOURCES.mkdir(parents=True, exist_ok=True)
+    BUNDLE_DIR.mkdir(parents=True, exist_ok=True)
+    tmp = BUNDLE_DIR / ASSET_NAME
+
+    if shutil.which("gh"):
+        cmd = ["gh", "release", "download", RELEASE_TAG, "--repo", RELEASE_REPO,
+               "--pattern", ASSET_NAME, "--dir", str(BUNDLE_DIR), "--clobber"]
+        try:
+            subprocess.run(cmd, check=True, capture_output=True, text=True)
+        except subprocess.CalledProcessError as exc:
+            tail = (exc.stderr or exc.stdout or "").strip().splitlines()
+            raise RuntimeError(tail[-1][:160] if tail else "gh release download failed")
+    else:
+        token = os.environ.get("GITHUB_TOKEN") or os.environ.get("GH_TOKEN")
+        url = (f"https://api.github.com/repos/{RELEASE_REPO}/releases/tags/{RELEASE_TAG}")
+        hdrs = ["-H", "Accept: application/vnd.github+json"]
+        if token:
+            hdrs += ["-H", f"Authorization: Bearer {token}"]
+        try:
+            meta = json.loads(subprocess.run(
+                ["curl", "-sSL", *hdrs, url],
+                check=True, capture_output=True, text=True).stdout)
+            asset = next(a for a in meta["assets"] if a["name"] == ASSET_NAME)
+        except Exception as exc:
+            raise RuntimeError(f"could not read release metadata via curl: {exc}")
+        # For a private repository the browser URL 404s without a token, so go
+        # through the API asset endpoint when we have one.
+        dl = asset["url"] if token else asset["browser_download_url"]
+        dh = ["-H", "Accept: application/octet-stream"]
+        if token:
+            dh += ["-H", f"Authorization: Bearer {token}"]
+        subprocess.run(["curl", "-sSL", *dh, "-o", str(tmp), dl],
+                       check=True, capture_output=True, text=True)
+
+    with tarfile.open(tmp) as tf:
+        # The archive's root IS `sources/`, so extract into its PARENT and the
+        # contents land at datasets/sources/... -- which is what the ETL reads.
+        tf.extractall(SOURCES.parent)
+    return len(list(SOURCES.rglob("*.csv")))
 
 
-def fetch_kaggle(slug, dest_rel):
-    """Download one Kaggle dataset into datasets/raw_tables/<dest_rel>/."""
-    token = os.environ.get("KAGGLE_API_TOKEN") or os.environ.get("KAGGLE_KEY")
-    if not token:
-        raise RuntimeError("KAGGLE_API_TOKEN is not set")
-    try:
-        import kaggle  # noqa: F401  (the CLI, used below, is simpler than the API)
-    except ImportError:
-        pass
-    dest = RAW / dest_rel
-    dest.mkdir(parents=True, exist_ok=True)
+def _kaggle_env():
+    """Expose the CLI's credential names from whichever form is configured."""
     env = dict(os.environ)
-    env.setdefault("KAGGLE_USERNAME", env.get("KAGGLE_USERNAME", ""))
+    if not env.get("KAGGLE_KEY"):
+        tok = env.get("KAGGLE_API_TOKEN", "")
+        if tok:
+            if ":" in tok:                    # the documented `username:key` form
+                user, key = tok.split(":", 1)
+                env.setdefault("KAGGLE_USERNAME", user)
+                env["KAGGLE_KEY"] = key
+            elif env.get("KAGGLE_USERNAME"):
+                env["KAGGLE_KEY"] = tok
+    return env
+
+
+def _auth_problem():
+    if (Path.home() / ".kaggle" / "kaggle.json").exists():
+        return None
+    env = _kaggle_env()
+    if env.get("KAGGLE_USERNAME") and env.get("KAGGLE_KEY"):
+        return None
+    if os.environ.get("KAGGLE_API_TOKEN") and not os.environ.get("KAGGLE_USERNAME"):
+        return ("KAGGLE_API_TOKEN is set but has no username and is not a\n"
+                "        `username:key` pair. Either set KAGGLE_USERNAME as well,\n"
+                "        or place kaggle.json in ~/.kaggle/.")
+    return "no Kaggle credentials (need kaggle.json, or KAGGLE_USERNAME + KAGGLE_KEY)"
+
+
+def _flatten(dest: Path):
+    """Move files out of any nested directory Kaggle created."""
+    for sub in [d for d in dest.iterdir() if d.is_dir()]:
+        for p in list(sub.rglob("*")):
+            if p.is_file():
+                shutil.move(str(p), str(dest / p.name))
+        shutil.rmtree(sub, ignore_errors=True)
+
+
+def _unzip_all(dest: Path):
+    for z in list(dest.glob("*.zip")):
+        with zipfile.ZipFile(z) as zf:
+            zf.extractall(dest)
+        z.unlink()
+    _flatten(dest)
+
+
+def _gunzip_all(dest: Path):
+    for g in list(dest.glob("*.gz")):
+        if g.stem.endswith(".csv"):
+            with gzip.open(g, "rb") as src, (dest / g.stem).open("wb") as dst:
+                shutil.copyfileobj(src, dst)
+            g.unlink()
+
+
+def fetch_kaggle(slug: str, subdir: str) -> int:
+    dest = SOURCES / subdir
+    dest.mkdir(parents=True, exist_ok=True)
     try:
         subprocess.run(
             ["kaggle", "datasets", "download", "-d", slug, "-p", str(dest), "--unzip"],
-            check=True, env=env, capture_output=True, text=True,
+            check=True, env=_kaggle_env(), capture_output=True, text=True,
         )
     except FileNotFoundError:
         raise RuntimeError("the `kaggle` CLI is not installed (pip install kaggle)")
     except subprocess.CalledProcessError as exc:
-        raise RuntimeError((exc.stderr or exc.stdout or "").strip()[:200] or "kaggle CLI failed")
-    # Kaggle sometimes yields nested directories or .csv.gz; normalise both.
-    for p in list(dest.rglob("*.csv.gz")):
-        _gunzip_in_place(p)
-    for sub in [d for d in dest.iterdir() if d.is_dir()]:
-        for p in sub.iterdir():
-            shutil.move(str(p), str(dest / p.name))
-        sub.rmdir()
+        lines = (exc.stderr or exc.stdout or "").strip().splitlines()
+        raise RuntimeError(lines[-1][:150] if lines else "kaggle CLI failed")
+    _unzip_all(dest)
+    _gunzip_all(dest)
     return len(list(dest.glob("*.csv")))
 
 
-def fetch_uci():
-    """The retail dataset is public; fetch it without any token."""
-    dest = RAW / "mysql" / "retail"
+def fetch_uci_retail() -> int:
+    """UCI online+retail ships as an .xlsx; the loader wants data.csv."""
+    dest = SOURCES / "retail"
     dest.mkdir(parents=True, exist_ok=True)
-    tmp = RAW / "_uci_retail.zip"
-    _say(f"downloading {UCI_RETAIL_URL}")
+    target = dest / "data.csv"
+    if target.exists() and target.stat().st_size > 100_000:
+        say("retail/data.csv already present")
+        return 1
+
+    say(f"downloading {UCI_RETAIL_URL}")
+    tmp = SOURCES / "_uci_retail.zip"
     urllib.request.urlretrieve(UCI_RETAIL_URL, tmp)
-    shutil.unpack_archive(str(tmp), str(dest))
+    with zipfile.ZipFile(tmp) as zf:
+        zf.extractall(dest)
     tmp.unlink()
-    # the archive contains Online Retail.xlsx; convert if a converter is present
-    sheets = list(dest.rglob("*.xlsx"))
-    if sheets:
-        try:
-            import pandas as pd
-            for x in sheets:
-                df = pd.read_excel(x)
-                out = dest / (x.stem.replace(" ", "_") + ".csv")
-                df.to_csv(out, index=False)
-                _say(f"converted {x.name} -> {out.name} ({len(df):,} rows)")
-        except ImportError:
-            _say(f"NOTE: {sheets[0].name} is an Excel file and pandas/openpyxl are")
-            _say("      not installed, so it was not converted. Either install them")
-            _say("      or convert the file to CSV by hand.")
-            return 0
-    return len(list(dest.glob("*.csv")))
+    _flatten(dest)
+
+    # already a CSV under another name?
+    candidates = [p for p in dest.glob("*.csv") if p.name != "data.csv"]
+    if candidates and not list(dest.glob("*.xlsx")):
+        shutil.move(str(candidates[0]), str(target))
+        say(f"{candidates[0].name} -> data.csv")
+        return 1
+
+    xlsx = next(iter(dest.glob("*.xlsx")), None)
+    if not xlsx:
+        raise RuntimeError("the UCI archive contained neither a CSV nor an .xlsx")
+    try:
+        import pandas as pd
+    except ImportError:
+        raise RuntimeError(
+            f"{xlsx.name} is an Excel file and pandas/openpyxl are not installed;\n"
+            "        `pip install pandas openpyxl`, or convert it to data.csv by hand")
+    df = pd.read_excel(xlsx, dtype=str)
+    df.to_csv(target, index=False)
+    xlsx.unlink()
+    say(f"converted {xlsx.name} -> data.csv ({len(df):,} rows)")
+    return 1
 
 
+# ------------------------------------------------------------------------ main
 def main():
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--only", choices=["kaggle", "uci"],
-                    help="fetch just one group of sources")
+    ap.add_argument("--only", choices=["release", "kaggle", "uci"],
+                    help="fetch just one source group (default: release, then fallback)")
     ap.add_argument("--check", action="store_true",
-                    help="report what is already present and exit")
+                    help="report what is present and exit 0/2")
     args = ap.parse_args()
 
-    RAW.mkdir(parents=True, exist_ok=True)
-    print(f"target: {RAW}\n")
+    SOURCES.mkdir(parents=True, exist_ok=True)
+    print(f"target: {SOURCES}\n")
 
     if args.check:
-        csvs = list(RAW.rglob("*.csv")) + list(RAW.rglob("*.csv.gz"))
-        print(f"  {len(csvs)} table file(s) present")
-        return 0
+        present = 0
+        for rel in EXPECTED:
+            ok = (SOURCES / rel).exists()
+            present += ok
+            print(f"  {'OK  ' if ok else 'MISS'} {rel}")
+        print(f"\n  {present}/{len(EXPECTED)} expected files present")
+        return 0 if present == len(EXPECTED) else 2
 
     problems = []
 
-    if args.only != "uci":
-        for slug, dest_rel, _ in KAGGLE:
-            try:
-                n = fetch_kaggle(slug, dest_rel)
-                print(f"  OK   {slug:<58} {n} CSV(s)")
-            except RuntimeError as exc:
-                print(f"  FAIL {slug:<58} {exc}")
-                problems.append((slug, str(exc)))
-
-    if args.only != "kaggle":
+    # Preferred: the frozen bundle, one request, no Kaggle token.
+    if args.only in (None, "release"):
         try:
-            n = fetch_uci()
-            print(f"  OK   UCI online+retail{'':<40} {n} CSV(s)")
+            n = fetch_release_bundle()
+            print(f"  OK   frozen bundle  {n} CSV(s)  <- release {RELEASE_TAG}")
         except Exception as exc:
-            print(f"  FAIL UCI online+retail  {type(exc).__name__}: {exc}")
-            problems.append(("uci/online-retail", str(exc)))
+            if args.only == "release":
+                print(f"  FAIL frozen bundle  {type(exc).__name__}: {exc}")
+                problems.append((f"release:{RELEASE_TAG}", str(exc)))
+            else:
+                print(f"  --   frozen bundle unavailable ({type(exc).__name__}); "
+                      "falling back to per-source fetch")
 
-    if problems:
-        print(f"\n  {len(problems)} source(s) could not be fetched.")
-        print("  The benchmark cannot be reproduced without all five. Nothing here")
-        print("  is a code defect: it is dataset access.")
+    # Fallback: fetch each source ourselves. Only needed if the release is gone.
+    need_fallback = any(not (SOURCES / rel).exists() for rel in EXPECTED)
+    if need_fallback and args.only != "release":
+        if args.only != "uci":
+            problem = _auth_problem()
+            if problem:
+                print(f"  FAIL Kaggle authentication: {problem}")
+                problems.append(("kaggle-auth", problem))
+            else:
+                for slug, subdir in KAGGLE:
+                    try:
+                        n = fetch_kaggle(slug, subdir)
+                        print(f"  OK   {subdir:<13} {n} CSV(s)  <- {slug}")
+                    except RuntimeError as exc:
+                        print(f"  FAIL {subdir:<13} {exc}")
+                        problems.append((slug, str(exc)))
+
+        if args.only != "kaggle":
+            try:
+                fetch_uci_retail()
+                print("  OK   retail        <- UCI online+retail (no token needed)")
+            except Exception as exc:
+                print(f"  FAIL retail        {type(exc).__name__}: {exc}")
+                problems.append(("uci/online-retail", str(exc)))
+
+    missing = [rel for rel in EXPECTED if not (SOURCES / rel).exists()]
+    if problems or missing:
+        print()
+        for rel in missing:
+            print(f"  MISSING {rel}")
+        print(f"\n  {len(problems)} source problem(s); {len(missing)} of "
+              f"{len(EXPECTED)} expected files absent.")
+        print("  The benchmark cannot be reproduced without all five sources.")
+        print("  This is dataset access, not a code defect -- see REPRODUCIBILITY.md.")
         return 2
 
-    print("\n  all sources present. Next:")
-    print("    docker compose up -d && python3 framework/load_federated_tables.py")
+    print(f"\n  all {len(EXPECTED)} expected files present. Next:")
+    print("    python3 framework/load_all_domains.py    # source -> both databases")
+    print("    python3 framework/load_federated_tables.py  # raw tables -> both databases")
+    print("    python3 tools/verify_gold_queries.py     # execute the 50 gold queries")
     return 0
 
 

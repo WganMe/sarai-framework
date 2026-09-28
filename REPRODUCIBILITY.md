@@ -17,11 +17,12 @@ anyone.
 python3 tools/assert_published_values.py
 
 # both halves, from a clean clone
-export KAGGLE_API_TOKEN=...          # 4 of the 5 datasets are Kaggle-gated
-python3 tools/fetch_datasets.py      # one UCI source needs no token
+export GH_TOKEN=...                   # a token that can read the repository
+python3 tools/fetch_datasets.py --only release   # one 143 MB asset
+python3 framework/load_all_domains.py            # source -> both databases
 docker compose up -d
-python3 framework/load_federated_tables.py
-python3 tools/verify_gold_queries.py
+python3 framework/load_federated_tables.py       # raw tables -> both engines
+python3 tools/verify_gold_queries.py             # execute all 50 gold queries
 
 # or all of the above
 ./reproduce.sh
@@ -39,28 +40,48 @@ federation: 50/50 gold queries executed and validated in 60.6s
             cross-engine joins: 24/50   (tier 3: 10/10, tier 4: 10/10, tier 5: 4/10)
 ```
 
-### The dataset requirement
+### Where the source data comes from
 
-371 MB of source tables are **not** in the repository (100 MB even gzipped), and
-four of the five sources are behind a Kaggle API token:
+371 MB of source tables are **not** in the tree. They are published, **frozen**, as
+a release asset:
 
-| Domain | Source | Token? |
+> `https://github.com/WganMe/sarai-framework/releases/tag/datasets-v1`
+> → `sarai-datasets-v1.tar.gz` (143 MB, 15 CSVs)
+
+`tools/fetch_datasets.py --only release` fetches it. That route needs **no Kaggle
+account**: it uses `gh`, which authenticates from `GITHUB_TOKEN` in CI or from
+`gh auth login` locally. In CI the workflow's own `secrets.GITHUB_TOKEN` is enough,
+so the `federation` job runs with no extra configuration. (The repository is
+private, so the plain browser URL returns 404 without a token — use `gh`, or the
+API asset endpoint with the `Accept: application/octet-stream` header.)
+
+#### Why frozen rather than fetched live
+
+| | Frozen release asset | Live fetch from Kaggle/UCI |
 | --- | --- | --- |
-| E-Commerce | Kaggle `olistbr/brazilian-ecommerce` | yes |
-| Healthcare | Kaggle `prasad22/healthcare-dataset` | yes |
-| Retail | **UCI** dataset 352 `online+retail` | no |
-| Financial | Kaggle `mlg-ulb/creditcardfraud` | yes |
-| Supply Chain | Kaggle `shashwatwork/dataco-smart-supply-chain…` | yes |
+| Needs a Kaggle token | **no** | yes, for 4 of the 5 sources |
+| Reproduces the reported row counts | **yes** | only if the dataset revision has not changed |
+| Runs unattended in CI | **yes** | only with a stored secret |
 
-`tools/fetch_datasets.py` retrieves them and records what it could not. In CI,
-set the `KAGGLE_API_TOKEN` secret to enable the `federation` job; without it the
-job **skips with a notice** rather than failing, because a missing token is a
-dataset-access problem, not a code defect. The `analysis` job always runs.
-
-One trap worth knowing: if the fetcher pulls a *newer* revision of a Kaggle
-dataset, the row counts change and the validators fail — a false negative that
+The trap this avoids: if a fetcher pulls a *newer* revision of a Kaggle dataset,
+the row counts change and the gold-query validators fail — a false negative that
 looks like a code bug. The counts in the manuscript are pinned to specific
-dataset revisions, so vendor the exact files for a hermetic run.
+revisions, so the exact files matter.
+
+`tools/fetch_datasets.py` (without `--only release`) still supports fetching each
+source individually, and falls back to that automatically if the release is
+unavailable. The five upstream sources and their licences:
+
+| Domain | Source | Licence |
+| --- | --- | --- |
+| E-Commerce | Kaggle `olistbr/brazilian-ecommerce` | CC BY-NC-SA 4.0 |
+| Healthcare | Kaggle `prasad22/healthcare-dataset` | CC0-1.0 |
+| Retail | UCI dataset 352 `online+retail` | CC BY 4.0 |
+| Financial | Kaggle `mlg-ulb/creditcardfraud` | DbCL-1.0 |
+| Supply Chain | Kaggle `shashwatwork/dataco-smart-supply-chain-...` | CC BY-NC-SA 4.0 |
+
+Each source keeps its upstream licence; this repository's licence does not
+relicense them.
 
 ## What is deliberately *not* covered, and why
 

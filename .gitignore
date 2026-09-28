@@ -11,6 +11,13 @@ __pycache__/
 venv/
 
 # Raw datasets and generated benchmark outputs
+# datasets/sources/ holds the five public inputs; fetch them with
+# tools/fetch_datasets.py rather than committing 371 MB.
+# The 143 MB release bundle is kept out of the tree entirely: it exceeds
+# GitHub's 100 MB per-file limit, so committing it would be rejected.
+datasets/sources/
+datasets/*.tar.gz
+*.tar.gz
 datasets/raw_tables/
 datasets/real_infra_runs/
 datasets/analysis_results.json

@@ -12,10 +12,18 @@ sovereignty-aware AI risk assessment.
 # Analysis half only — no services needed (~30 s)
 python3 tools/assert_published_values.py
 
-# Full run: fetch the datasets, start the federated stack, verify the federation
-export KAGGLE_API_TOKEN=...      # 4 of the 5 datasets are Kaggle-gated
+# Full run: fetch the frozen datasets, start the federated stack, verify it
+export GH_TOKEN=...              # a token that can read this repository
 ./reproduce.sh
 ```
+
+## Data
+
+The 371 MB of source tables are not in the tree. They are published **frozen** as a
+release asset, `<https://github.com/WganMe/sarai-framework/releases/tag/datasets-v1>`,
+and `tools/fetch_datasets.py --only release` fetches it in one request. That route
+needs no Kaggle account. Fetching each source individually from Kaggle and UCI is
+also supported; see [`REPRODUCIBILITY.md`](REPRODUCIBILITY.md).
 
 ## Included
 
@@ -51,7 +59,8 @@ every value can be overridden:
 | `OLLAMA_URL` | benchmark, risk mechanisms | `http://127.0.0.1:11434` |
 | `ENGINE_HEADER_STYLE` | `workflow.json` code node | `trino` |
 | `RAW_TABLES_DIR` | loaders | `datasets/raw_tables` |
-| `KAGGLE_API_TOKEN` | `tools/fetch_datasets.py` | unset |
+| `SOURCES_DIR` | `tools/fetch_datasets.py` | `datasets/sources` |
+| `GH_TOKEN` / `GITHUB_TOKEN` | release-asset fetch | unset (CI sets it) |
 | `RUNS_DIR`, `BENCHMARK_DIR`, `FIG_OUTDIR` | outputs | inside the checkout |
 
 ## The orchestrator

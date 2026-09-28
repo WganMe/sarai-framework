@@ -105,13 +105,14 @@ jobs:
     # The strongest deterministic check available: the whole data path, with no
     # model-version problem. PrestoDB 0.284 is the engine the patent names.
     #
-    # The 371 MB of source tables are NOT in the repository, and 4 of the 5
-    # sources are behind a Kaggle token. So this job runs only when the data is
-    # obtainable, and says so rather than failing with a confusing traceback.
-    # Set the KAGGLE_API_TOKEN repository secret to enable it.
+    # The 371 MB of source tables are not in the tree. They are published as a
+    # release asset, which Actions can fetch with the GITHUB_TOKEN it already
+    # has -- so this needs no extra secret and no Kaggle account.
     federation:
         runs-on: ubuntu-24.04
         timeout-minutes: 40
+        env:
+            GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         steps:
             - uses: actions/checkout@v5
 
@@ -121,31 +122,12 @@ jobs:
                   sudo apt-get install -y --no-install-recommends python3 python3-pip curl
                   python3 -m pip install --upgrade pip
                   python3 -m pip install \
-                    'psycopg2-binary>=2.9' 'mysql-connector-python>=8' 'requests>=2.28' \
-                    'kaggle>=1.6' 'pandas>=2' 'openpyxl>=3'
+                    'psycopg2-binary>=2.9' 'mysql-connector-python>=8' 'requests>=2.28'
 
-            - name: Note whether the datasets can be fetched at all
-              id: have_data
-              env:
-                  KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_API_TOKEN }}
-                  KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
-              run: |
-                  if [ -z "${KAGGLE_API_TOKEN:-}" ]; then
-                    echo "::notice title=Federation check skipped::The KAGGLE_API_TOKEN secret is not set and 4 of the 5 datasets are gated behind a Kaggle token, so the federated stack cannot be loaded. Set KAGGLE_API_TOKEN to enable this job. See REPRODUCIBILITY.md."
-                    echo "available=false" >> "$GITHUB_OUTPUT"
-                  else
-                    echo "available=true" >> "$GITHUB_OUTPUT"
-                  fi
-
-            - name: Fetch the five public datasets
-              if: steps.have_data.outputs.available == 'true'
-              env:
-                  KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_API_TOKEN }}
-                  KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
-              run: python3 tools/fetch_datasets.py
+            - name: Fetch the frozen datasets from the release asset
+              run: python3 tools/fetch_datasets.py --only release
 
             - name: Start the federated stack
-              if: steps.have_data.outputs.available == 'true'
               run: |
                   docker compose up -d
                   for i in $(seq 1 60); do
@@ -153,27 +135,20 @@ jobs:
                     [ "$i" = 60 ] && { echo "engine did not come up"; docker compose logs presto | tail -40; exit 1; }
                     sleep 5
                   done
-                  curl -fsS http://localhost:8080/v1/info
+                  curl -fsS http://localhost:8080/v1/info | head -c 200; echo
 
             - name: Load the five public datasets
-              if: steps.have_data.outputs.available == 'true'
               run: python3 framework/load_federated_tables.py
 
             - name: Assert every gold query executes and validates
-              if: steps.have_data.outputs.available == 'true'
               run: python3 tools/verify_gold_queries.py
 
             - name: Summarise
               run: |
                   {
                     echo "### federation"
-                    if [ "${{ steps.have_data.outputs.available }}" = "true" ]; then
-                      echo 'Verified: all 50 gold queries executed through PrestoDB 0.284'
-                      echo 'and satisfied their own validators, including the cross-engine joins.'
-                    else
-                      echo 'Skipped: the datasets need a Kaggle token that is not configured.'
-                      echo 'The `analysis` job still passed, so claim A is verified.'
-                    fi
+                    echo 'PrestoDB 0.284. All 50 gold queries executed and satisfied'
+                    echo 'their own validators, including the cross-engine joins.'
                   } >> "$GITHUB_STEP_SUMMARY"
 
             - name: Stack logs on failure
