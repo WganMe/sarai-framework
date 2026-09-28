@@ -41,6 +41,6 @@
     "decision support",
     "information systems artefact"
   ],
-  "notes": "The companion manuscript is under review. The GitHub repository github.com/WganMe/sarai-framework is currently PRIVATE, so no related_identifiers link is given: a 404 in a public record is worse than no link. Zenodo freezes files on publish but not metadata, so the repository link can be added once the repository becomes public.",
+  "notes": "This record is the software artefact for the manuscript \"SARAI: Sovereignty-Aware Risk Assessment Infrastructure for Reliable Federated Business Intelligence\", which is under review. The DOI above is the permanent, credential-free location for the artefact code. The five public source datasets are not redistributed here, because a single Zenodo record carries one licence while those sources carry three different ones, two of them non-commercial; see LICENSE and REPRODUCIBILITY.md for each source and how to obtain it. The code repository is private while the manuscript is under review, so no repository related-identifier is given here: a link that returns 404 from a permanent record is worse than no link. A related identifier can be added once the repository is public, since Zenodo freezes files on publish but not metadata.",
   "communities": []
 }
