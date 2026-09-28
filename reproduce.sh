@@ -27,6 +27,18 @@ fi
 
 # ---------------------------------------------------------------- data half
 # Needs the federated stack. PrestoDB 0.284 is the engine the patent names.
+say "checking the source datasets"
+if ! "$PY" tools/fetch_datasets.py --check | grep -qv '^  0 table'; then
+  if [ -n "${KAGGLE_API_TOKEN:-}" ]; then
+    "$PY" tools/fetch_datasets.py || { echo "dataset fetch failed; see the messages above"; exit 2; }
+  else
+    echo "No tables in datasets/raw_tables/ and KAGGLE_API_TOKEN is not set."
+    echo "Four of the five sources are Kaggle-gated, so the federation cannot be"
+    echo "reproduced without a token. The analysis half above still passed."
+    exit 2
+  fi
+fi
+
 say "starting postgres, mariadb and the federation engine"
 if ! command -v docker >/dev/null 2>&1; then
   echo "docker not found. Either install it, or run: ./reproduce.sh --analysis"

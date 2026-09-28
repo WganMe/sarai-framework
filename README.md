@@ -12,7 +12,8 @@ sovereignty-aware AI risk assessment.
 # Analysis half only — no services needed (~30 s)
 python3 tools/assert_published_values.py
 
-# Full run: start the federated stack, load the data, verify the federation
+# Full run: fetch the datasets, start the federated stack, verify the federation
+export KAGGLE_API_TOKEN=...      # 4 of the 5 datasets are Kaggle-gated
 ./reproduce.sh
 ```
 
@@ -50,6 +51,7 @@ every value can be overridden:
 | `OLLAMA_URL` | benchmark, risk mechanisms | `http://127.0.0.1:11434` |
 | `ENGINE_HEADER_STYLE` | `workflow.json` code node | `trino` |
 | `RAW_TABLES_DIR` | loaders | `datasets/raw_tables` |
+| `KAGGLE_API_TOKEN` | `tools/fetch_datasets.py` | unset |
 | `RUNS_DIR`, `BENCHMARK_DIR`, `FIG_OUTDIR` | outputs | inside the checkout |
 
 ## The orchestrator

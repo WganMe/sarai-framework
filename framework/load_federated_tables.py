@@ -18,8 +18,11 @@ Usage:
 """
 import argparse
 import csv
+import gzip
 import os
+import shutil
 import sys
+import tempfile
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -46,8 +49,31 @@ TEXT = "text"
 
 
 def _read_header(path: Path):
-    with path.open(newline="", encoding="utf-8", errors="replace") as fh:
+    opener = gzip.open if path.suffix == ".gz" else open
+    with opener(path, "rt", newline="", encoding="utf-8", errors="replace") as fh:
         return next(csv.reader(fh))
+
+
+def _table_files(subdir: str):
+    """CSVs under raw_tables/<subdir>, accepting .csv and .csv.gz.
+
+    If both forms of the same table are present, the plain .csv wins, so a
+    directory holding an archive and its expansion does not load twice.
+    """
+    base = RAW / subdir
+
+    def table_key(p: Path) -> str:
+        return p.name[:-7] if p.name.endswith(".csv.gz") else p.name[:-4]
+
+    chosen = {}
+    for p in sorted(list(base.rglob("*.csv.gz")) + list(base.rglob("*.csv"))):
+        if not p.name.endswith((".csv", ".csv.gz")):
+            continue
+        key = table_key(p)
+        # a plain .csv replaces a previously chosen .gz, never the reverse
+        if key not in chosen or not p.name.endswith(".gz"):
+            chosen[key] = p
+    return [chosen[k] for k in sorted(chosen)]
 
 
 def load_postgres():
@@ -57,9 +83,10 @@ def load_postgres():
     cur = conn.cursor()
     cur.execute("CREATE SCHEMA IF NOT EXISTS public")
     total = 0
-    files = sorted((RAW / "postgresql").rglob("*.csv"))
+    files = _table_files("postgresql")
     if not files:
-        sys.exit(f"no CSVs found under {RAW / 'postgresql'}")
+        sys.exit(f"no CSVs found under {RAW / 'postgresql'}\n"
+                 "  fetch them first:  python3 tools/fetch_datasets.py")
     for path in files:
         table = path.stem
         cols = _read_header(path)
@@ -74,7 +101,7 @@ def load_postgres():
         try:
             cur.copy_from(fh, f'"{table}"', sep=",", null="")
         finally:
-            fh.close()
+            _cleanup(fh)
         cur.execute(f'SELECT count(*) FROM public."{table}"')
         n = cur.fetchone()[0]
         total += n
@@ -84,10 +111,32 @@ def load_postgres():
 
 
 def _skip_header(path: Path):
-    """Yield a file object positioned just after the header line."""
-    fh = path.open(newline="", encoding="utf-8", errors="replace")
+    """Return a readable handle positioned just after the header line.
+
+    A .csv.gz is decompressed to a temporary file first, because copy_from and
+    the MariaDB reader both need a seekable text stream.
+    """
+    if path.suffix == ".gz":
+        tmp = tempfile.NamedTemporaryFile("wb", suffix=".csv", delete=False)
+        with gzip.open(path, "rb") as src:
+            shutil.copyfileobj(src, tmp)
+        tmp.close()
+        fh = open(tmp.name, "r", newline="", encoding="utf-8", errors="replace")
+        fh.__dict__["_tmpname"] = tmp.name      # so callers can clean up
+    else:
+        fh = path.open(newline="", encoding="utf-8", errors="replace")
     fh.readline()
     return fh
+
+
+def _cleanup(fh):
+    name = fh.__dict__.pop("_tmpname", None)
+    fh.close()
+    if name:
+        try:
+            os.unlink(name)
+        except OSError:
+            pass
 
 
 def load_mariadb():
@@ -97,11 +146,12 @@ def load_mariadb():
     cur.execute(f"CREATE DATABASE IF NOT EXISTS `{MY['database']}`")
     cur.execute(f"USE `{MY['database']}`")
     total = 0
-    files = sorted((RAW / "mysql").rglob("*.csv"))
+    files = _table_files("mysql")
     if not files:
-        sys.exit(f"no CSVs found under {RAW / 'mysql'}")
+        sys.exit(f"no CSVs found under {RAW / 'mysql'}\n"
+                 "  fetch them first:  python3 tools/fetch_datasets.py")
     for path in files:
-        table = path.stem
+        table = path.name[:-4] if path.name.endswith(".csv") else path.name[:-7]
         cols = _read_header(path)
         cur.execute(f"DROP TABLE IF EXISTS `{table}`")
         cur.execute(
@@ -123,6 +173,7 @@ def load_mariadb():
                 f"INSERT INTO `{table}` VALUES (" +
                 ",".join(["%s"] * len(cols)) + ")", chunk)
             n += len(chunk)
+        _cleanup(fh)
         conn.commit()
         total += n
         print(f"  mysql.{MY['database']}.{table:<20} {n:>9,} rows")

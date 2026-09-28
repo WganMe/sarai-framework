@@ -17,6 +17,8 @@ anyone.
 python3 tools/assert_published_values.py
 
 # both halves, from a clean clone
+export KAGGLE_API_TOKEN=...          # 4 of the 5 datasets are Kaggle-gated
+python3 tools/fetch_datasets.py      # one UCI source needs no token
 docker compose up -d
 python3 framework/load_federated_tables.py
 python3 tools/verify_gold_queries.py
@@ -25,6 +27,10 @@ python3 tools/verify_gold_queries.py
 ./reproduce.sh
 ```
 
+The loader produces **8 fact tables in PostgreSQL and 14 dimension tables in
+MariaDB** — the same shape the manuscript reports, read from the CSV headers
+rather than from a schema file.
+
 Measured on a clean clone before publishing:
 
 ```
@@ -32,6 +38,29 @@ analysis : 16 published values reproduce from the committed run data.
 federation: 50/50 gold queries executed and validated in 60.6s
             cross-engine joins: 24/50   (tier 3: 10/10, tier 4: 10/10, tier 5: 4/10)
 ```
+
+### The dataset requirement
+
+371 MB of source tables are **not** in the repository (100 MB even gzipped), and
+four of the five sources are behind a Kaggle API token:
+
+| Domain | Source | Token? |
+| --- | --- | --- |
+| E-Commerce | Kaggle `olistbr/brazilian-ecommerce` | yes |
+| Healthcare | Kaggle `prasad22/healthcare-dataset` | yes |
+| Retail | **UCI** dataset 352 `online+retail` | no |
+| Financial | Kaggle `mlg-ulb/creditcardfraud` | yes |
+| Supply Chain | Kaggle `shashwatwork/dataco-smart-supply-chain…` | yes |
+
+`tools/fetch_datasets.py` retrieves them and records what it could not. In CI,
+set the `KAGGLE_API_TOKEN` secret to enable the `federation` job; without it the
+job **skips with a notice** rather than failing, because a missing token is a
+dataset-access problem, not a code defect. The `analysis` job always runs.
+
+One trap worth knowing: if the fetcher pulls a *newer* revision of a Kaggle
+dataset, the row counts change and the validators fail — a false negative that
+looks like a code bug. The counts in the manuscript are pinned to specific
+dataset revisions, so vendor the exact files for a hermetic run.
 
 ## What is deliberately *not* covered, and why
 
