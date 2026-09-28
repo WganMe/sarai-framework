@@ -40,13 +40,21 @@ services:
       retries: 30
 
   # PRESTO_HOME in this image is /opt/presto-server, and the 0.284 image ships no
-  # etc/ at all -- it fails with "Config file is missing:
+  # usable etc/ -- only config.properties.example and jvm.config.example, plus a
+  # node.properties with no node.id. It fails with "Config file is missing:
   # /opt/presto-server/etc/config.properties". So supply the whole etc/ tree,
   # which is why framework/presto/etc/ holds all four files rather than only the
   # catalog: config.properties, jvm.config, node.properties, catalog/.
   #
   # The catalog defines the two connectors every query in the benchmark
   # references:  postgresql.public.<table>  JOIN  mysql.bcdr_framework.<table>
+  #
+  # The mount is deliberately WRITABLE. The image's entrypoint runs
+  #   echo "node.id=$HOSTNAME" >> $PRESTO_HOME/etc/node.properties
+  # before starting the launcher, so a read-only mount fails with
+  # "/opt/entrypoint.sh: line 4: .../node.properties: Read-only file system".
+  # Nothing secret is exposed: the catalog properties point at the other two
+  # containers on this private compose network.
   presto:
     image: prestodb/presto:0.284
     ports: ["8080:8080"]
@@ -54,7 +62,7 @@ services:
       postgres: {condition: service_healthy}
       mariadb: {condition: service_healthy}
     volumes:
-      - ./framework/presto/etc:/opt/presto-server/etc:ro
+      - ./framework/presto/etc:/opt/presto-server/etc
     healthcheck:
       # curl is not installed in the image; python3 is, so probe with that.
       test: ["CMD-SHELL", "python3 -c \"import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8080/v1/info', timeout=5).status==200 else 1)\""]
