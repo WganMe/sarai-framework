@@ -1,8 +1,14 @@
 # SARAI: Sovereignty-Aware Risk Assessment Infrastructure
 
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.23010102.svg)](https://doi.org/10.5281/zenodo.23010102)
-[![verify](https://github.com/WganMe/sarai-framework/actions/workflows/verify.yml/badge.svg)](https://github.com/WganMe/sarai-framework/actions/workflows/verify.yml)
 [![License: CC BY 4.0](https://img.shields.io/badge/License-CC%20BY%204.0-lightgrey.svg)](LICENSE)
+
+<!-- No CI badge while the repository is private. GitHub's own badge URL returns
+     404 for a private repo, and shields.io renders "repo or workflow not found",
+     because it reads public data -- a badge reading "not found" is worse than no
+     badge. Add one when the repository becomes public:
+     [![verify](https://github.com/WganMe/sarai-framework/actions/workflows/verify.yml/badge.svg)](https://github.com/WganMe/sarai-framework/actions/workflows/verify.yml)
+     The workflow itself runs on every push and both its jobs are green. -->
 
 Implementation code for reliable federated business intelligence and
 sovereignty-aware AI risk assessment.
