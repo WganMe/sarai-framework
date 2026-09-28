@@ -377,11 +377,15 @@ def run_presto(sql, timeout=30):
     except Exception as e:
         return None, None, time.time() - t0, str(e)
 
-    # A wrong header family gives 401 and a text body, not JSON. Try the other
-    # family once before reporting anything, then remember what worked. The retry
-    # uses a CLEAN header set for the other family: mixing X-Trino-* with a single
-    # X-Presto-User would not tell us which family the engine actually wants.
-    if r.status_code in (401, 403):
+    # A wrong header family never returns JSON. The status differs by product:
+    #   Trino     -> 401 "Basic authentication or X-Trino-Original-User or
+    #                      X-Trino-User must be sent"
+    #   PrestoDB  -> 400 "User must be set"
+    # So keying the retry on one particular status misses the other. Retry with a
+    # CLEAN header set for the other family on any 4xx, and remember what worked.
+    # The retry deliberately does not mix families, or it would not identify which
+    # one the engine actually wants.
+    if 400 <= r.status_code < 500:
         other = 'X-Presto-' if _PREFIX == 'X-Trino-' else 'X-Trino-'
         try:
             r2 = requests.post(
