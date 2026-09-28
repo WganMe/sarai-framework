@@ -17,12 +17,9 @@ anyone.
 python3 tools/assert_published_values.py
 
 # both halves, from a clean clone
-export GH_TOKEN=...                   # a token that can read the repository
-python3 tools/fetch_datasets.py --only release   # one 143 MB asset
-python3 framework/load_all_domains.py            # source -> both databases
-docker compose up -d
-python3 framework/load_federated_tables.py       # raw tables -> both engines
-python3 tools/verify_gold_queries.py             # execute all 50 gold queries
+git lfs install && git lfs pull           # the datasets are tracked in LFS
+python3 framework/load_federated_tables.py
+python3 tools/verify_gold_queries.py
 
 # or all of the above
 ./reproduce.sh
@@ -42,46 +39,27 @@ federation: 50/50 gold queries executed and validated in 60.6s
 
 ### Where the source data comes from
 
-371 MB of source tables are **not** in the tree. They are published, **frozen**, as
-a release asset:
+The five public datasets are tracked **in Git LFS**, in `datasets/raw_tables/` —
+500 MB, and `creditcard.csv` alone is 144 MB, which is over GitHub's 100 MB
+per-file limit for ordinary git. So LFS is not a preference here: it is the only
+way that file can live in the repository at all, and a plain `git clone` without
+`git lfs pull` yields 134-byte pointers instead of data.
 
-> `https://github.com/WganMe/sarai-framework/releases/tag/datasets-v1`
-> → `sarai-datasets-v1.tar.gz` (143 MB, 15 CSVs)
+`datasets/raw_tables/` is the **canonical** dataset and the one the benchmark
+queries. It holds 8 PostgreSQL fact tables and 14 MariaDB dimension tables
+covering all five domains, including the e-commerce tables that
+`load_all_domains.py` does not build (that script covers four domains).
 
-`tools/fetch_datasets.py --only release` fetches it. That route needs **no Kaggle
-account**: it uses `gh`, which authenticates from `GITHUB_TOKEN` in CI or from
-`gh auth login` locally. In CI the workflow's own `secrets.GITHUB_TOKEN` is enough,
-so the `federation` job runs with no extra configuration. (The repository is
-private, so the plain browser URL returns 404 without a token — use `gh`, or the
-API asset endpoint with the `Accept: application/octet-stream` header.)
+`tools/fetch_datasets.py` is the alternative route: it pulls the same data
+straight from Kaggle and UCI into `datasets/sources/`. Four of the five sources
+need a Kaggle token and only the UCI one does not, so LFS is the easier path for a
+reader. Both are supported.
 
-#### Why frozen rather than fetched live
-
-| | Frozen release asset | Live fetch from Kaggle/UCI |
-| --- | --- | --- |
-| Needs a Kaggle token | **no** | yes, for 4 of the 5 sources |
-| Reproduces the reported row counts | **yes** | only if the dataset revision has not changed |
-| Runs unattended in CI | **yes** | only with a stored secret |
-
-The trap this avoids: if a fetcher pulls a *newer* revision of a Kaggle dataset,
-the row counts change and the gold-query validators fail — a false negative that
-looks like a code bug. The counts in the manuscript are pinned to specific
-revisions, so the exact files matter.
-
-`tools/fetch_datasets.py` (without `--only release`) still supports fetching each
-source individually, and falls back to that automatically if the release is
-unavailable. The five upstream sources and their licences:
-
-| Domain | Source | Licence |
-| --- | --- | --- |
-| E-Commerce | Kaggle `olistbr/brazilian-ecommerce` | CC BY-NC-SA 4.0 |
-| Healthcare | Kaggle `prasad22/healthcare-dataset` | CC0-1.0 |
-| Retail | UCI dataset 352 `online+retail` | CC BY 4.0 |
-| Financial | Kaggle `mlg-ulb/creditcardfraud` | DbCL-1.0 |
-| Supply Chain | Kaggle `shashwatwork/dataco-smart-supply-chain-...` | CC BY-NC-SA 4.0 |
-
-Each source keeps its upstream licence; this repository's licence does not
-relicense them.
+**Metering caveat, for the repository owner.** LFS download bandwidth is charged
+to the repository owner and resets each month (10 GiB on Free and Pro alike, and
+CI downloads count against it), so roughly 20 full fetches a month fit inside the
+free quota. If that becomes a problem, the `datasets-v1` release asset holds the
+same files and is unmetered.
 
 ## What is deliberately *not* covered, and why
 
@@ -160,10 +138,12 @@ carry.
 
 | Path | Role |
 | --- | --- |
+| `datasets/raw_tables/` | the canonical dataset, in Git LFS (8 + 14 tables) |
 | `docker-compose.yml` | PostgreSQL 13 + MariaDB 10.11 + PrestoDB 0.284 |
-| `framework/presto/catalog/*.properties` | the `postgresql` and `mysql` connectors |
+| `framework/presto/etc/` | the engine's full config: config, jvm, node, catalog |
 | `framework/load_federated_tables.py` | loads `datasets/raw_tables/` into both |
 | `tools/verify_gold_queries.py` | executes and validates all 50 gold queries |
 | `tools/assert_published_values.py` | the 16 analysis assertions (claim A) |
+| `tools/fetch_datasets.py` | alternative: pull the data from Kaggle/UCI |
 | `.github/workflows/verify.yml` | both jobs, with their scope stated in the header |
 | `reproduce.sh` | the whole thing, in order |

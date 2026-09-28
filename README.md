@@ -12,18 +12,27 @@ sovereignty-aware AI risk assessment.
 # Analysis half only — no services needed (~30 s)
 python3 tools/assert_published_values.py
 
-# Full run: fetch the frozen datasets, start the federated stack, verify it
-export GH_TOKEN=...              # a token that can read this repository
+# Full run: start the federated stack, load the data, verify the federation
+# (the datasets arrive with the clone: git lfs pull)
 ./reproduce.sh
 ```
 
 ## Data
 
-The 371 MB of source tables are not in the tree. They are published **frozen** as a
-release asset, `<https://github.com/WganMe/sarai-framework/releases/tag/datasets-v1>`,
-and `tools/fetch_datasets.py --only release` fetches it in one request. That route
-needs no Kaggle account. Fetching each source individually from Kaggle and UCI is
-also supported; see [`REPRODUCIBILITY.md`](REPRODUCIBILITY.md).
+The five public source datasets are tracked **in Git LFS** (500 MB total; one file
+is 144 MB, over GitHub's 100 MB per-file limit, so LFS is the only way it can live
+here). A clone needs `git lfs pull`:
+
+```bash
+git lfs install          # once per machine
+git clone <repo> && cd sarai-framework
+git lfs pull             # materialises datasets/raw_tables/
+```
+
+`datasets/raw_tables/` is the canonical dataset: 8 fact tables in PostgreSQL and
+14 dimension tables in MariaDB, covering all five domains. `tools/fetch_datasets.py`
+fetches the same data from upstream instead, if you prefer not to use LFS; see
+[`REPRODUCIBILITY.md`](REPRODUCIBILITY.md).
 
 ## Included
 

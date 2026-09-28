@@ -65,3 +65,7 @@ datasets/sources/**/*.zip
 datasets/sources/**/*.xlsx
 datasets/raw_tables/**/*.zip
 *.tar.gz
+
+# The .csv.gz siblings under raw_tables/ are the same content as the .csv files
+# in another form. Track only the plain .csv.
+datasets/raw_tables/**/*.csv.gz
