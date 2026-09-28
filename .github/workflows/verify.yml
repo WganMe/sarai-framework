@@ -136,12 +136,18 @@ jobs:
                   git lfs install --local
                   git lfs pull --include='datasets/raw_tables/**'
                   # Fail loudly here rather than with a confusing traceback later.
-                  n=$(find datasets/raw_tables -name '*.csv' -size +1k | wc -l)
+                  n=$(find datasets/raw_tables -name '*.csv' | wc -l)
                   echo "materialised $n CSV file(s) under datasets/raw_tables/"
-                  test "$n" -ge 22 || { echo "expected at least 22 tables"; exit 1; }
-                  # A 134-byte file would be an un-smudged pointer, not data.
-                  oversized=$(find datasets/raw_tables -name '*.csv' -size -200c | wc -l)
-                  test "$oversized" -eq 0 || { echo "$oversized file(s) are still LFS pointers"; exit 1; }
+                  test "$n" -ge 22 || { echo "expected at least 22 tables, got $n"; exit 1; }
+                  # Detect un-smudged pointers by CONTENT, not size. Several tables
+                  # are legitimately tiny -- hc_conditions.csv is 101 bytes and
+                  # fin_fraud_classes.csv is 157 -- so they are shorter than the
+                  # 134-byte pointer itself and a size test would either miss a real
+                  # pointer or reject a real table. A pointer starts with this line.
+                  pointers=$(grep -rl '^version https://git-lfs.github.com/spec/v1' \
+                               datasets/raw_tables --include='*.csv' | wc -l)
+                  test "$pointers" -eq 0 || { echo "$pointers file(s) are still LFS pointers"; exit 1; }
+                  echo "no LFS pointers remain: every file is real content"
 
             - name: Install toolchain
               run: |
