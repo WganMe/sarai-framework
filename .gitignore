@@ -2,28 +2,17 @@
 framework/.env
 *.secret
 *.key
-
 # Python and local tooling
 __pycache__/
 *.py[cod]
 .pytest_cache/
 .venv/
 venv/
-
 # Raw datasets and generated benchmark outputs
-# datasets/sources/ holds the five public inputs; fetch them with
-# tools/fetch_datasets.py rather than committing 371 MB.
-# The 143 MB release bundle is kept out of the tree entirely: it exceeds
-# GitHub's 100 MB per-file limit, so committing it would be rejected.
-datasets/sources/
-datasets/*.tar.gz
-*.tar.gz
-datasets/raw_tables/
 datasets/real_infra_runs/
 datasets/analysis_results.json
 datasets/metadata/source_validation_report.json
 datasets/metadata/*.json
-
 # Benchmark runs: excluded by default, because a run directory accumulates
 # superseded attempts and re-runs that the manuscript does not cite.
 datasets/benchmark_results_*.json
@@ -33,7 +22,6 @@ datasets/benchmark_results_*.json
 # would clone the code and find its only input missing. Negative pattern, so it
 # must come after the exclusion above to take effect.
 !datasets/benchmark_results_20260219_054729.json
-
 # Generated figures and local logs
 *.pdf
 *.png
@@ -43,3 +31,37 @@ datasets/benchmark_results_*.json
 *.blg
 *.out
 *.toc
+
+# Raw datasets and generated benchmark outputs
+#
+# The five public source datasets ARE tracked, through Git LFS (see
+# .gitattributes). creditcard.csv is 144 MB, over GitHub's 100 MB per-file
+# limit for ordinary git, so LFS is the only way it can live in the repo.
+# Archives are never tracked: the release bundle is re-downloadable.
+#
+# Caveat: LFS download bandwidth is metered against the repository owner and
+# resets monthly (10 GiB on Free and Pro alike; CI downloads count, so about
+# 20 full fetches a month fit). The `datasets-v1` release asset is the
+# unmetered path and is what CI uses.
+datasets/sources/**/*.zip
+datasets/sources/**/*.xlsx
+*.tar.gz
+datasets/raw_tables/**/*.zip
+datasets/real_infra_runs/
+datasets/analysis_results.json
+datasets/metadata/source_validation_report.json
+datasets/metadata/*.json
+
+# The five public source datasets ARE tracked, through Git LFS -- see
+# .gitattributes. creditcard.csv is 144 MB, over GitHub's 100 MB per-file limit
+# for ordinary git, so LFS is the only way it can live in the repository at all.
+# Archives are never tracked: the release bundle is re-downloadable.
+#
+# Caveat for the repository owner: LFS download bandwidth is metered against the
+# owner's allowance and resets monthly (10 GiB on Free and Pro alike, and CI
+# downloads count), so roughly 20 full fetches a month fit inside it. The
+# `datasets-v1` release asset is the unmetered path, and is what CI uses.
+datasets/sources/**/*.zip
+datasets/sources/**/*.xlsx
+datasets/raw_tables/**/*.zip
+*.tar.gz
