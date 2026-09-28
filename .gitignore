@@ -47,10 +47,6 @@ datasets/sources/**/*.zip
 datasets/sources/**/*.xlsx
 *.tar.gz
 datasets/raw_tables/**/*.zip
-datasets/real_infra_runs/
-datasets/analysis_results.json
-datasets/metadata/source_validation_report.json
-datasets/metadata/*.json
 
 # The five public source datasets ARE tracked, through Git LFS -- see
 # .gitattributes. creditcard.csv is 144 MB, over GitHub's 100 MB per-file limit
@@ -61,10 +57,6 @@ datasets/metadata/*.json
 # owner's allowance and resets monthly (10 GiB on Free and Pro alike, and CI
 # downloads count), so roughly 20 full fetches a month fit inside it. The
 # `datasets-v1` release asset is the unmetered path, and is what CI uses.
-datasets/sources/**/*.zip
-datasets/sources/**/*.xlsx
-datasets/raw_tables/**/*.zip
-*.tar.gz
 
 # The .csv.gz siblings under raw_tables/ are the same content as the .csv files
 # in another form. Track only the plain .csv.
