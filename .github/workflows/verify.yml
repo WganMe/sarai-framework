@@ -114,12 +114,34 @@ jobs:
         env:
             GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         steps:
-            # `lfs: true` matters: actions/checkout defaults it to false, and the
-            # five source datasets live in Git LFS. Without it the working tree
-            # contains 134-byte pointers and the loader finds no data.
+            # LFS objects must be materialised: actions/checkout defaults `lfs` to
+            # false, and without it the working tree holds 134-byte pointers and the
+            # loader finds no data.
+            #
+            # Which objects, though, matters for the owner's bandwidth meter. LFS
+            # downloads are counted against the repository owner and reset monthly
+            # (10 GiB on Free and Pro alike), and each full CI run pays for whatever
+            # it fetches. `lfs: true` would pull EVERY tracked object:
+            #   datasets/raw_tables/  371 MB   <- what this job loads
+            #   datasets/sources/     500 MB   <- only for the from-source ETL path
+            # so it would spend 871 MB a run where 371 MB does, and exhaust the
+            # allowance in about 11 runs rather than 27. Pulling only what is needed
+            # is therefore deliberate, not an optimisation.
             - uses: actions/checkout@v5
               with:
-                  lfs: true
+                  lfs: false
+
+            - name: Fetch just the tables this job loads
+              run: |
+                  git lfs install --local
+                  git lfs pull --include='datasets/raw_tables/**'
+                  # Fail loudly here rather than with a confusing traceback later.
+                  n=$(find datasets/raw_tables -name '*.csv' -size +1k | wc -l)
+                  echo "materialised $n CSV file(s) under datasets/raw_tables/"
+                  test "$n" -ge 22 || { echo "expected at least 22 tables"; exit 1; }
+                  # A 134-byte file would be an un-smudged pointer, not data.
+                  oversized=$(find datasets/raw_tables -name '*.csv' -size -200c | wc -l)
+                  test "$oversized" -eq 0 || { echo "$oversized file(s) are still LFS pointers"; exit 1; }
 
             - name: Install toolchain
               run: |
