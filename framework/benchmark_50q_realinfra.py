@@ -341,25 +341,74 @@ UNION ALL SELECT 'Supply Chain', COUNT(*), ROUND(SUM(sales), 2) FROM postgresql.
 ]
 
 # ─── Federation Engine Query Runner ────────────────────────────────────────────────────
+# Both PrestoDB and Trino implement the same /v1/statement protocol, but they read
+# DIFFERENT request headers: PrestoDB reads X-Presto-*, Trino reads X-Trino-*. Send
+# the wrong family and the engine replies 401 with a plain-text body, which surfaces
+# much later as "Expecting value: line 1 column 1" from r.json(). The family is
+# therefore detected once, from the first response, and cached for the process.
+HEADER_STYLE = os.environ.get('ENGINE_HEADER_STYLE', '').lower()
+_PREFIX = None
+
+
+def _headers(catalog='postgresql', schema='public'):
+    """Session headers in whichever family this engine accepts."""
+    p = _PREFIX or 'X-Trino-'
+    return {f'{p}User': 'presto', f'{p}Catalog': catalog, f'{p}Schema': schema}
+
+
+def _adopt_style(prefix):
+    global _PREFIX
+    _PREFIX = prefix
+
+
 def run_presto(sql, timeout=30):
-    """Execute SQL via federation engine REST API, return (columns, rows, elapsed_sec)"""
-    headers = {
-        'X-Trino-User': 'presto',
-        'X-Trino-Catalog': 'postgresql',
-        'X-Trino-Schema': 'public'
-    }
+    """Execute SQL via the federation engine REST API.
+
+    Returns (columns, rows, elapsed_sec, error). `error` is None on success.
+    """
+    global _PREFIX
+    if _PREFIX is None:
+        _PREFIX = {'presto': 'X-Presto-', 'trino': 'X-Trino-'}.get(HEADER_STYLE, 'X-Trino-')
+
     t0 = time.time()
     try:
-        r = requests.post(f'{FEDERATION_URL}/v1/statement', headers=headers, data=sql, timeout=10)
-        d = r.json()
+        r = requests.post(f'{FEDERATION_URL}/v1/statement', headers=_headers(),
+                          data=sql, timeout=10)
     except Exception as e:
         return None, None, time.time() - t0, str(e)
-    
+
+    # A wrong header family gives 401 and a text body, not JSON. Try the other
+    # family once before reporting anything, then remember what worked. The retry
+    # uses a CLEAN header set for the other family: mixing X-Trino-* with a single
+    # X-Presto-User would not tell us which family the engine actually wants.
+    if r.status_code in (401, 403):
+        other = 'X-Presto-' if _PREFIX == 'X-Trino-' else 'X-Trino-'
+        try:
+            r2 = requests.post(
+                f'{FEDERATION_URL}/v1/statement',
+                headers={f'{other}User': 'presto',
+                         f'{other}Catalog': 'postgresql',
+                         f'{other}Schema': 'public'},
+                data=sql, timeout=10)
+        except Exception:
+            r2 = None
+        if r2 is not None and r2.status_code == 200:
+            _adopt_style(other)
+            r = r2
+
+    try:
+        d = r.json()
+    except ValueError:
+        body = (r.text or '').strip().replace('\n', ' ')[:140]
+        return (None, None, time.time() - t0,
+                f'engine returned HTTP {r.status_code} with a non-JSON body: {body!r} '
+                f'(sent {_PREFIX}* headers; set ENGINE_HEADER_STYLE=presto|trino to force)')
+
     all_rows = d.get('data', [])
     cols = [c['name'] for c in d.get('columns', [])] if d.get('columns') else []
     uri = d.get('nextUri')
     error = d.get('error')
-    
+
     for _ in range(120):
         if not uri:
             break
@@ -367,7 +416,7 @@ def run_presto(sql, timeout=30):
             break
         time.sleep(0.25)
         try:
-            resp = requests.get(uri, headers={'X-Trino-User': 'presto'}, timeout=10)
+            resp = requests.get(uri, headers=_headers(), timeout=10)
             d = resp.json()
         except Exception as e:
             return cols, all_rows, time.time() - t0, str(e)
