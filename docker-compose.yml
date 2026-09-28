@@ -4,11 +4,13 @@
 # federation engine that joins them. It deliberately does NOT include the LLM or
 # the dashboard, for the reasons stated in REPRODUCIBILITY.md.
 #
+#   python3 tools/fetch_datasets.py --only release    # the frozen sources
 #   docker compose up -d
-#   ./reproduce.sh              # loads the data, then asserts 50/50 gold queries
+#   python3 framework/load_all_domains.py             # source -> both databases
+#   python3 tools/verify_gold_queries.py              # assert 50/50 gold queries
 #
-# The engine is PrestoDB 0.284 — the product the patent names. CI uses the same
-# image so a green badge means the same thing as a local run.
+# The engine is PrestoDB 0.284 — the product the patent names, not Trino. CI uses
+# the same image, so a green badge means the same thing as a local run.
 services:
   postgres:
     image: postgres:13
@@ -17,13 +19,11 @@ services:
       POSTGRES_PASSWORD: framework
       POSTGRES_DB: framework_data
     ports: ["5432:5432"]
-    volumes:
-      - ./datasets/raw_tables/postgresql:/docker-entrypoint-initdb.d/raw:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U framework -d framework_data"]
       interval: 5s
       timeout: 5s
-      retries: 20
+      retries: 30
 
   mariadb:
     image: mariadb:10.11
@@ -33,28 +33,31 @@ services:
       MARIADB_USER: framework
       MARIADB_PASSWORD: framework
     ports: ["3306:3306"]
-    volumes:
-      - ./datasets/raw_tables/mysql:/docker-entrypoint-initdb.d/raw:ro
     healthcheck:
       test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
       interval: 5s
       timeout: 5s
-      retries: 20
+      retries: 30
 
-  # Two connectors: `postgresql` (facts) and `mysql` (dimensions). These catalog
-  # names are what every query in the benchmark uses, e.g.
-  #   postgresql.public.olist_orders  JOIN  mysql.bcdr_framework.olist_customers
+  # PRESTO_HOME in this image is /opt/presto-server, and the image already ships
+  # its own config.properties, jvm.config and node.properties. Mounting an empty
+  # etc/ over the top removes them and the engine refuses to start with
+  # "Config file is missing: /opt/presto-server/etc/config.properties".
+  # So mount ONLY the catalog directory, which defines the two connectors that
+  # every query in the benchmark references:
+  #   postgresql.public.<table>   JOIN   mysql.bcdr_framework.<table>
   presto:
     image: prestodb/presto:0.284
     ports: ["8080:8080"]
     depends_on:
       postgres: {condition: service_healthy}
-      mariadb:  {condition: service_healthy}
+      mariadb: {condition: service_healthy}
     volumes:
-      - ./framework/presto/catalog:/opt/presto/etc/catalog:ro
+      - ./framework/presto/catalog:/opt/presto-server/etc/catalog:ro
     healthcheck:
-      test: ["CMD-SHELL", "curl -fsS http://localhost:8080/v1/info >/dev/null"]
+      # curl is not installed in the image; python3 is, so probe with that.
+      test: ["CMD-SHELL", "python3 -c \"import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8080/v1/info', timeout=5).status==200 else 1)\""]
       interval: 10s
-      timeout: 5s
-      retries: 30
-      start_period: 40s
+      timeout: 10s
+      retries: 40
+      start_period: 30s
