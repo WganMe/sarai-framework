@@ -11,9 +11,12 @@ SARAI Risk Assessment Mechanisms — Actual Implementation
 These run inside the workflow platform as code nodes via the unified API.
 """
 
-import json, re, time, requests, statistics, math
+import json, re, time, requests, statistics, math, os
 from datetime import datetime
 from collections import Counter
+
+# Local inference endpoint. Overridable so the mechanisms are not bound to one host.
+OLLAMA_URL = os.environ.get('OLLAMA_URL', 'http://127.0.0.1:11434')
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # MECHANISM 1: SQL Anomaly Scorer
@@ -497,7 +500,7 @@ class ConfidenceGate:
         """Generate SQL with local LLM and return confidence metrics"""
         t0 = time.time()
         try:
-            r = requests.post('http://127.0.0.1:11434/api/generate', json={
+            r = requests.post(f'{OLLAMA_URL}/api/generate', json={
                 'model': model,
                 'prompt': prompt,
                 'stream': False,

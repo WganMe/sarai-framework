@@ -3,21 +3,66 @@
 Implementation code for reliable federated business intelligence and
 sovereignty-aware AI risk assessment.
 
+**Reproducibility status, and exactly what is and is not reproducible: see
+[`REPRODUCIBILITY.md`](REPRODUCIBILITY.md).**
+
+## Quick start
+
+```bash
+# Analysis half only — no services needed (~30 s)
+python3 tools/assert_published_values.py
+
+# Full run: start the federated stack, load the data, verify the federation
+./reproduce.sh
+```
+
 ## Included
 
-- Federated Text-to-SQL benchmark scripts
-- SQL anomaly detection and reliability mechanisms
-- Prompt ablation and statistical analysis scripts
+- Federated Text-to-SQL benchmark — 50 questions, 5 complexity tiers, 5 domains,
+  24 of them genuine cross-engine joins (+ the gold SQL and per-question validators)
+- SQL anomaly detection (13 rule-based detectors) and the other reliability
+  mechanisms: schema-drift monitoring, confidence gating, feedback loops
+- Statistical analysis: McNemar exact tests with Holm correction, Cochran's Q,
+  Wilson intervals, Cohen's *h*, and the graded-sovereignty sensitivity analysis
 - Database loading and deployment utilities
+- `docker-compose.yml` — PostgreSQL + MariaDB + the federation engine, with the
+  catalog configuration, so the stack comes up in one command
 - Dataset provenance metadata
 
 ## Excluded
 
-Credentials, raw datasets, generated benchmark results, local caches, and
-server logs are excluded. Runtime connection settings are read from environment
-variables; local `.env` files are not committed.
+Credentials, the raw datasets, and the large per-run outputs. Connection settings
+are read from the environment; no `.env` file is committed. `.gitignore` names
+each exclusion explicitly rather than using broad globs, and the **one** benchmark
+run the manuscript cites is deliberately tracked — without it the repository
+could not reproduce its own reported numbers.
 
-The manuscript and supplementary response are maintained separately from this
-code repository.
+## Configuration
 
-Repository: https://github.com/WganMe/sarai-framework
+Everything defaults to `127.0.0.1` and the ports in `docker-compose.yml`, and
+every value can be overridden:
+
+| Variable | Used by | Default |
+| --- | --- | --- |
+| `POSTGRES_HOST/PORT/DB/USER/PASSWORD` | loaders, loaders, deployment | `127.0.0.1:5432` |
+| `MARIADB_HOST/PORT/DB/USER/PASSWORD` | loaders, deployment | `127.0.0.1:3306` |
+| `FEDERATION_URL` | benchmark, verifier, workflow | `http://127.0.0.1:8080` |
+| `OLLAMA_URL` | benchmark, risk mechanisms | `http://127.0.0.1:11434` |
+| `ENGINE_HEADER_STYLE` | `workflow.json` code node | `trino` |
+| `RAW_TABLES_DIR` | loaders | `datasets/raw_tables` |
+| `RUNS_DIR`, `BENCHMARK_DIR`, `FIG_OUTDIR` | outputs | inside the checkout |
+
+## The orchestrator
+
+`framework/workflow.json` is an importable workflow definition: a webhook plus a
+code node implementing the seven actions (`ask`, `chat`, `compile`, `dashboards`,
+`health`, `help`, `metrics`, `stats`). Import it into n8n and set
+`FEDERATION_URL` / `OLLAMA_URL` for your host. The `health` action probes the
+federation engine, the local model server, the databases and the cache.
+
+## License and citation
+
+See `CITATION.cff` in the companion manuscript repository. The datasets are
+public: four from Kaggle (Olist e-commerce, healthcare, credit-card fraud, supply
+chain) and one from the UCI repository (online retail). Their provenance is
+recorded in `datasets/metadata/`.

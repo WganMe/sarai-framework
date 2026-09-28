@@ -1,0 +1,146 @@
+name: verify
+
+# ===========================================================================
+# WHAT THIS PROVES
+#
+#   Job `analysis` -- runs anywhere, no services:
+#       revision_stats.py, deployment_cost.py, sovereignty_sensitivity.py
+#       regenerate the manuscript's ANALYSIS numbers from the committed run
+#       data, and 16 assertions check every value still matches the paper.
+#
+#   Job `federation` -- starts PostgreSQL, MariaDB and PrestoDB 0.284, loads the
+#       five public datasets, then executes all 50 gold queries through the
+#       engine and requires each to satisfy its own validator. This covers the
+#       DATA half: real cross-engine joins, not two independent reads.
+#
+# WHAT THIS DOES NOT PROVE -- stated so the badge is not over-read
+#
+#   It does NOT reproduce the manuscript's reported accuracies (60% / 74% / 90%).
+#   Those came from HOSTED models called over HTTP:
+#       google/gemma-3-27b-it:free
+#       meta-llama/llama-3.3-70b-instruct:free
+#       deepseek/deepseek-r1-0528:free
+#   A free tier can change or vanish, so no amount of CI can pin them. That is a
+#   limitation of the claim, not of this workflow.
+#
+#   It does NOT run a local LLM either. llama3.2:3b is a different model from
+#   the ones the accuracies come from, so a green badge from it would prove the
+#   harness works while implying something about the paper that is untrue.
+#
+#   It does NOT bring up the dashboard or the orchestration layer, which are not
+#   on the path that produced any reported number.
+#
+# See REPRODUCIBILITY.md for the full account, including what was verified once
+# on real hardware.
+# ===========================================================================
+
+on:
+    push:
+        branches: [main]
+    pull_request:
+        branches: [main]
+    workflow_dispatch:
+
+permissions:
+    contents: read
+
+jobs:
+    # ---------------------------------------------------------------- analysis
+    analysis:
+        runs-on: ubuntu-24.04
+        timeout-minutes: 15
+        steps:
+            - uses: actions/checkout@v5
+
+            - name: Install toolchain
+              run: |
+                  sudo apt-get update
+                  sudo apt-get install -y --no-install-recommends python3 python3-pip
+                  python3 -m pip install --upgrade pip
+                  # matplotlib renders fig_sensitivity.pdf; numpy comes with it.
+                  # revision_stats.py deliberately avoids scipy.
+                  python3 -m pip install 'matplotlib>=3.5' 'numpy>=1.21'
+
+            - name: Record toolchain versions
+              run: |
+                  {
+                    echo "### toolchain"
+                    echo '```'
+                    python3 --version
+                    python3 -c 'import matplotlib, numpy; print("matplotlib", matplotlib.__version__); print("numpy", numpy.__version__)'
+                    echo '```'
+                  } >> "$GITHUB_STEP_SUMMARY"
+
+            - name: Check the cited run data is present
+              run: |
+                  f=datasets/benchmark_results_20260219_054729.json
+                  test -s "$f" || { echo "$f is missing -- it is the input every analysis script reads"; exit 1; }
+                  echo "present: $f ($(wc -c < "$f") bytes)"
+
+            - name: Assert the scripts reproduce the published values
+              run: python3 tools/assert_published_values.py
+
+            - name: Check the sensitivity figure was produced
+              run: |
+                  python3 framework/sovereignty_sensitivity.py --out /tmp/figcheck
+                  test -s /tmp/figcheck/fig_sensitivity.pdf || { echo "fig_sensitivity.pdf was not produced"; exit 1; }
+                  echo "fig_sensitivity.pdf: $(wc -c < /tmp/figcheck/fig_sensitivity.pdf) bytes"
+
+            - name: Check the tree is unchanged after the run
+              run: |
+                  # NOTE ':!__pycache__' is INVALID: git reads the leading underscore as
+                  # pathspec magic and aborts. Glob the name instead.
+                  files=$(git status --porcelain -- . \
+                            ':!framework/fig_sensitivity.pdf' \
+                            ':!*.png' ':!**/__pycache__/**' ':!*.pyc')
+                  if [ -n "$files" ]; then
+                    echo "files changed during the verification:"
+                    echo "$files"
+                    echo "A committed value was regenerated differently."
+                    exit 1
+                  fi
+                  echo "tree unchanged: the committed run data reproduces the same values"
+
+    # -------------------------------------------------------------- federation
+    # The strongest deterministic check available: the whole data path, with no
+    # model-version problem. PrestoDB 0.284 is the engine the patent names.
+    federation:
+        runs-on: ubuntu-24.04
+        timeout-minutes: 30
+        steps:
+            - uses: actions/checkout@v5
+
+            - name: Install toolchain
+              run: |
+                  sudo apt-get update
+                  sudo apt-get install -y --no-install-recommends python3 python3-pip curl
+                  python3 -m pip install --upgrade pip
+                  python3 -m pip install 'psycopg2-binary>=2.9' 'mysql-connector-python>=8' 'requests>=2.28'
+
+            - name: Start the federated stack
+              run: |
+                  docker compose up -d
+                  for i in $(seq 1 60); do
+                    if curl -fsS http://localhost:8080/v1/info >/dev/null 2>&1; then break; fi
+                    [ "$i" = 60 ] && { echo "engine did not come up"; docker compose logs presto | tail -40; exit 1; }
+                    sleep 5
+                  done
+                  curl -fsS http://localhost:8080/v1/info
+
+            - name: Load the five public datasets
+              run: python3 framework/load_federated_tables.py
+
+            - name: Assert every gold query executes and validates
+              run: python3 tools/verify_gold_queries.py
+
+            - name: Summarise
+              run: |
+                  {
+                    echo "### federation"
+                    echo 'Verified: all 50 gold queries executed through PrestoDB 0.284'
+                    echo 'and satisfied their own validators, including the cross-engine joins.'
+                  } >> "$GITHUB_STEP_SUMMARY"
+
+            - name: Stack logs on failure
+              if: failure()
+              run: docker compose logs --tail=60

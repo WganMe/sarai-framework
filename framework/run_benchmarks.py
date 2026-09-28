@@ -8,9 +8,18 @@ Each query is run 5 times; we report median, min, max latency.
 import subprocess
 import time
 import json
+import os
 import statistics
 
-JAVA_ENV = "export JAVA_HOME=/opt/jdk-11.0.30+7 && export PATH=$JAVA_HOME/bin:$PATH"
+# Optional Java environment override. Set JAVA_HOME (and JAVA_ENV) only if the
+# engine's CLI needs a specific JDK; leaving this empty uses the ambient java.
+JAVA_ENV = os.environ.get('JAVA_ENV', '')
+
+# Where results are written. Defaults to <repo>/datasets so a clone works as-is.
+OUT_FILE = os.environ.get(
+    'BENCHMARK_OUT',
+    os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                  '..', 'datasets', 'benchmark_results.json')))
 
 BENCHMARKS = [
     # =====================================================================
@@ -323,7 +332,7 @@ def main():
                   f"Stdev: {result['stdev_latency']:.3f}s")
     
     # Save results
-    with open('/var/www/datasets/benchmark_results.json', 'w') as f:
+    with open(OUT_FILE, 'w') as f:
         json.dump(results, f, indent=2)
     
     # Print summary table
@@ -369,7 +378,7 @@ def main():
     print("    - supply_chain: 4 tables (20,832 rows)")
     print(f"\n  TOTAL: ~2,722,169 rows across 23 tables, 2 engines, 5 domains")
     
-    print(f"\nResults saved to /var/www/datasets/benchmark_results.json")
+    print(f"\nResults saved to {OUT_FILE}")
 
 
 if __name__ == '__main__':

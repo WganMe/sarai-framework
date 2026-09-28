@@ -11,13 +11,13 @@ import os, csv, sys
 import psycopg2
 import mysql.connector
 
-RAW = "/home/bcdr/phd/PhD/phd/papers/Project/datasets/raw_tables"
+RAW = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "datasets", "raw_tables"))
 
-PG_CONN = dict(host=os.environ["POSTGRES_HOST"], port=5432,
+PG_CONN = dict(host=os.environ["POSTGRES_HOST"], port=int(os.environ.get("POSTGRES_PORT", 5432)),
                dbname=os.environ["POSTGRES_DB"],
                user=os.environ["POSTGRES_USER"],
                password=os.environ["POSTGRES_PASSWORD"])
-MY_CONN = dict(host=os.environ["MARIADB_HOST"], port=3306,
+MY_CONN = dict(host=os.environ["MARIADB_HOST"], port=int(os.environ.get("MARIADB_PORT", 3306)),
                database=os.environ["MARIADB_DB"],
                user=os.environ["MARIADB_USER"],
                password=os.environ["MARIADB_PASSWORD"],

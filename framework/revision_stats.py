@@ -8,9 +8,16 @@ No scipy/statsmodels dependency, consistent with the project's existing
 from-scratch statistics style in process_results.py.
 """
 import json, math
+import os
 from itertools import combinations
 
-RESULTS_FILE = "/home/bcdr/phd/PhD/phd/papers/Project/datasets/benchmark_results_20260219_054729.json"
+# Resolve the run data RELATIVE TO THIS FILE rather than by absolute path. The
+# absolute form ("/home/bcdr/...") only worked on the machine that wrote it, so
+# neither a co-author nor CI could run this script at all.
+HERE = os.path.dirname(os.path.abspath(__file__))
+RESULTS_FILE = os.path.normpath(
+    os.path.join(HERE, "..", "datasets",
+                 "benchmark_results_20260219_054729.json"))
 
 EVALUATED_MODELS = ["Llama 3.2 3B", "Llama 3.1 8B", "Gemma-3 27B", "DeepSeek R1"]  # Llama 3.3 70B excluded: API failure
 

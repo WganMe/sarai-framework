@@ -1,12 +1,17 @@
 #!/usr/bin/env python3
 """
 Configure dashboard datasets and charts for all 5 federated domains via the federation engine.
-Run from within the dashboard platform venv with DASHBOARD_CONFIG_PATH set.
+
+Run from within the dashboard platform's virtualenv. Set DASHBOARD_CONFIG_PATH to
+the platform's config module before running; there is no universal default because
+it depends on how the platform was installed on your machine.
 """
 
 import sys
 import os
-os.environ['DASHBOARD_CONFIG_PATH'] = '/opt/dashboard/config/dashboard_config.py'
+
+# Respect an existing DASHBOARD_CONFIG_PATH; only supply a conventional fallback.
+os.environ.setdefault('DASHBOARD_CONFIG_PATH', '/opt/dashboard/config/dashboard_config.py')
 
 from superset.app import create_app
 app = create_app()

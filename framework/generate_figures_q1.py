@@ -38,7 +38,7 @@ plt.rcParams.update({
     'text.usetex': False,
 })
 
-OUTDIR = os.environ.get('FIG_OUTDIR', '/var/www/Article_Title/figures')
+OUTDIR = os.environ.get('FIG_OUTDIR', os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'figures')))
 os.makedirs(OUTDIR, exist_ok=True)
 
 # ── Color palette ───────────────────────────────────────────────────────

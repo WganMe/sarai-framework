@@ -6,18 +6,25 @@ import psycopg2
 import mysql.connector
 import os
 
-PG_CONN = dict(host=os.environ.get('POSTGRES_HOST', '127.0.0.1'), port=5432,
+PG_CONN = dict(host=os.environ.get('POSTGRES_HOST', '127.0.0.1'),
+               port=int(os.environ.get('POSTGRES_PORT', 5432)),
                dbname=os.environ.get('POSTGRES_DB', os.environ.get('POSTGRES_DB_FRAMEWORK', 'framework_data')),
                user=os.environ.get('POSTGRES_USER', 'framework'),
                password=os.environ.get('POSTGRES_PASSWORD', ''))
-MY_CONN = dict(host=os.environ.get('MARIADB_HOST', '127.0.0.1'), port=3306,
+MY_CONN = dict(host=os.environ.get('MARIADB_HOST', '127.0.0.1'),
+               port=int(os.environ.get('MARIADB_PORT', 3306)),
                user=os.environ.get('MARIADB_USER', 'framework'),
                password=os.environ.get('MARIADB_PASSWORD', ''))
 # Single combined MariaDB database holding all domain tables (table names are
 # already domain-prefixed: hc_, fin_, rt_, sc_, olist_ - no collisions).
 MARIADB_DB = os.environ.get('MARIADB_DB', 'framework')
 
-BASE = '/var/www/datasets'
+# Where the per-table CSVs live. Defaults to <repo>/datasets/raw_tables so a
+# fresh clone works without configuration.
+BASE = os.environ.get(
+    'RAW_TABLES_DIR',
+    os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                  '..', 'datasets', 'raw_tables')))
 
 def pg_execute(sql, data=None):
     conn = psycopg2.connect(**PG_CONN)

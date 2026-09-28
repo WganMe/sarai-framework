@@ -1,0 +1,204 @@
+{
+  "generated_at": "2026-04-02T03:24:47.641026Z",
+  "table_count": 22,
+  "tables": [
+    {
+      "table": "mysql.financial.fin_fraud_classes",
+      "output_csv": "/var/www/datasets/raw_tables/mysql/financial/fin_fraud_classes.csv",
+      "elapsed_sec": 0.77,
+      "status": "ok",
+      "error": null,
+      "row_count": 2,
+      "column_count": 3
+    },
+    {
+      "table": "mysql.financial.fin_time_buckets",
+      "output_csv": "/var/www/datasets/raw_tables/mysql/financial/fin_time_buckets.csv",
+      "elapsed_sec": 0.764,
+      "status": "ok",
+      "error": null,
+      "row_count": 4,
+      "column_count": 5
+    },
+    {
+      "table": "mysql.healthcare.hc_conditions",
+      "output_csv": "/var/www/datasets/raw_tables/mysql/healthcare/hc_conditions.csv",
+      "elapsed_sec": 0.763,
+      "status": "ok",
+      "error": null,
+      "row_count": 6,
+      "column_count": 2
+    },
+    {
+      "table": "mysql.healthcare.hc_doctors",
+      "output_csv": "/var/www/datasets/raw_tables/mysql/healthcare/hc_doctors.csv",
+      "elapsed_sec": 0.862,
+      "status": "ok",
+      "error": null,
+      "row_count": 40341,
+      "column_count": 2
+    },
+    {
+      "table": "mysql.healthcare.hc_hospitals",
+      "output_csv": "/var/www/datasets/raw_tables/mysql/healthcare/hc_hospitals.csv",
+      "elapsed_sec": 0.875,
+      "status": "ok",
+      "error": null,
+      "row_count": 39876,
+      "column_count": 2
+    },
+    {
+      "table": "mysql.healthcare.hc_insurance",
+      "output_csv": "/var/www/datasets/raw_tables/mysql/healthcare/hc_insurance.csv",
+      "elapsed_sec": 0.766,
+      "status": "ok",
+      "error": null,
+      "row_count": 5,
+      "column_count": 2
+    },
+    {
+      "table": "mysql.olist_ecommerce.olist_customers",
+      "output_csv": "/var/www/datasets/raw_tables/mysql/olist_ecommerce/olist_customers.csv",
+      "elapsed_sec": 3.889,
+      "status": "ok",
+      "error": null,
+      "row_count": 99441,
+      "column_count": 5
+    },
+    {
+      "table": "mysql.olist_ecommerce.olist_products",
+      "output_csv": "/var/www/datasets/raw_tables/mysql/olist_ecommerce/olist_products.csv",
+      "elapsed_sec": 1.282,
+      "status": "ok",
+      "error": null,
+      "row_count": 32951,
+      "column_count": 9
+    },
+    {
+      "table": "mysql.olist_ecommerce.olist_sellers",
+      "output_csv": "/var/www/datasets/raw_tables/mysql/olist_ecommerce/olist_sellers.csv",
+      "elapsed_sec": 0.781,
+      "status": "ok",
+      "error": null,
+      "row_count": 3095,
+      "column_count": 4
+    },
+    {
+      "table": "mysql.retail.rt_customers",
+      "output_csv": "/var/www/datasets/raw_tables/mysql/retail/rt_customers.csv",
+      "elapsed_sec": 0.769,
+      "status": "ok",
+      "error": null,
+      "row_count": 4372,
+      "column_count": 2
+    },
+    {
+      "table": "mysql.retail.rt_products",
+      "output_csv": "/var/www/datasets/raw_tables/mysql/retail/rt_products.csv",
+      "elapsed_sec": 0.776,
+      "status": "ok",
+      "error": null,
+      "row_count": 3958,
+      "column_count": 2
+    },
+    {
+      "table": "mysql.supply_chain.sc_categories",
+      "output_csv": "/var/www/datasets/raw_tables/mysql/supply_chain/sc_categories.csv",
+      "elapsed_sec": 0.766,
+      "status": "ok",
+      "error": null,
+      "row_count": 51,
+      "column_count": 2
+    },
+    {
+      "table": "mysql.supply_chain.sc_customers",
+      "output_csv": "/var/www/datasets/raw_tables/mysql/supply_chain/sc_customers.csv",
+      "elapsed_sec": 0.883,
+      "status": "ok",
+      "error": null,
+      "row_count": 20652,
+      "column_count": 9
+    },
+    {
+      "table": "mysql.supply_chain.sc_departments",
+      "output_csv": "/var/www/datasets/raw_tables/mysql/supply_chain/sc_departments.csv",
+      "elapsed_sec": 0.763,
+      "status": "ok",
+      "error": null,
+      "row_count": 11,
+      "column_count": 2
+    },
+    {
+      "table": "postgresql.public.fin_transactions",
+      "output_csv": "/var/www/datasets/raw_tables/postgresql/public/fin_transactions.csv",
+      "elapsed_sec": 50.569,
+      "status": "ok",
+      "error": null,
+      "row_count": 249381,
+      "column_count": 33
+    },
+    {
+      "table": "postgresql.public.hc_admissions",
+      "output_csv": "/var/www/datasets/raw_tables/postgresql/public/hc_admissions.csv",
+      "elapsed_sec": 2.984,
+      "status": "ok",
+      "error": null,
+      "row_count": 55500,
+      "column_count": 16
+    },
+    {
+      "table": "postgresql.public.olist_order_items",
+      "output_csv": "/var/www/datasets/raw_tables/postgresql/public/olist_order_items.csv",
+      "elapsed_sec": 5.748,
+      "status": "ok",
+      "error": null,
+      "row_count": 112650,
+      "column_count": 7
+    },
+    {
+      "table": "postgresql.public.olist_order_payments",
+      "output_csv": "/var/www/datasets/raw_tables/postgresql/public/olist_order_payments.csv",
+      "elapsed_sec": 2.839,
+      "status": "ok",
+      "error": null,
+      "row_count": 103886,
+      "column_count": 5
+    },
+    {
+      "table": "postgresql.public.olist_order_reviews",
+      "output_csv": "/var/www/datasets/raw_tables/postgresql/public/olist_order_reviews.csv",
+      "elapsed_sec": 4.864,
+      "status": "ok",
+      "error": null,
+      "row_count": 99224,
+      "column_count": 7
+    },
+    {
+      "table": "postgresql.public.olist_orders",
+      "output_csv": "/var/www/datasets/raw_tables/postgresql/public/olist_orders.csv",
+      "elapsed_sec": 5.305,
+      "status": "ok",
+      "error": null,
+      "row_count": 99441,
+      "column_count": 8
+    },
+    {
+      "table": "postgresql.public.rt_invoices",
+      "output_csv": "/var/www/datasets/raw_tables/postgresql/public/rt_invoices.csv",
+      "elapsed_sec": 11.141,
+      "status": "ok",
+      "error": null,
+      "row_count": 541909,
+      "column_count": 7
+    },
+    {
+      "table": "postgresql.public.sc_orders",
+      "output_csv": "/var/www/datasets/raw_tables/postgresql/public/sc_orders.csv",
+      "elapsed_sec": 16.783,
+      "status": "ok",
+      "error": null,
+      "row_count": 180519,
+      "column_count": 29
+    }
+  ]
+}

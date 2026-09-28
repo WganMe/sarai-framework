@@ -75,7 +75,10 @@ if __name__ == "__main__":
         print(f"{name:<15s} {r['total_correct']}/{r['total_questions']} ({pct:.1f}%)")
     print(f"{'few_shot (baseline, already measured)':<15s} 37/50 (74.0%)")
 
-    outdir = "/home/bcdr/phd/PhD/phd/papers/Project/datasets/real_infra_runs"
+    outdir = os.environ.get(
+        "RUNS_DIR",
+        os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                      "..", "datasets", "real_infra_runs")))
     os.makedirs(outdir, exist_ok=True)
     ts = datetime.now().strftime("%Y%m%d_%H%M%S")
     outfile = os.path.join(outdir, f"ablation_results_{ts}.json")

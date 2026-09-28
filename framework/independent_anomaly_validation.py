@@ -6,11 +6,14 @@ used to build/tune the detection rules). Addresses the reviewer's concern that
 the anomaly rules and test samples may have been developed from the same
 underlying categories, potentially inflating the reported F1 score.
 """
-import json, sys
-sys.path.insert(0, "/home/bcdr/phd/PhD/phd/papers/Project/framework")
+import json, os, sys
+HERE = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, HERE)
 from sarai_risk_mechanisms import SQLAnomalyScorer
 
-RESULTS_FILE = "/home/bcdr/phd/PhD/phd/papers/Project/datasets/benchmark_results_20260219_054729.json"
+# Resolve the run data relative to this file so the script works from any checkout.
+RESULTS_FILE = os.path.normpath(
+    os.path.join(HERE, "..", "datasets", "benchmark_results_20260219_054729.json"))
 
 
 def main():

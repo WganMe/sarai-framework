@@ -7,6 +7,16 @@ Each question has: natural language, gold SQL, expected answer pattern, tier, do
 import json, time, requests, sys, statistics, re, os, argparse
 from datetime import datetime
 
+# ─── Endpoints and output locations ───────────────────────────────────────────
+# Resolved from the environment so the harness is not tied to one host. The
+# defaults are the localhost ports of the reference deployment; override with
+# FEDERATION_URL / OLLAMA_URL (and RUNS_DIR) to point anywhere else.
+HERE = os.path.dirname(os.path.abspath(__file__))
+FEDERATION_URL = os.environ.get('FEDERATION_URL', 'http://127.0.0.1:8080')
+OLLAMA_URL = os.environ.get('OLLAMA_URL', 'http://127.0.0.1:11434')
+RUNS_DIR = os.environ.get(
+    'RUNS_DIR', os.path.normpath(os.path.join(HERE, '..', 'datasets', 'real_infra_runs')))
+
 # ─── 50 Benchmark Questions ───────────────────────────────────────────────────
 # Tier 1: Single-table (no join) — 10 questions
 # Tier 2: Single-join within one engine — 10 questions
@@ -340,7 +350,7 @@ def run_presto(sql, timeout=30):
     }
     t0 = time.time()
     try:
-        r = requests.post('http://127.0.0.1:8080/v1/statement', headers=headers, data=sql, timeout=10)
+        r = requests.post(f'{FEDERATION_URL}/v1/statement', headers=headers, data=sql, timeout=10)
         d = r.json()
     except Exception as e:
         return None, None, time.time() - t0, str(e)
@@ -610,7 +620,7 @@ def call_local_llm(model, question, timeout=180):
     """Call local LLM and return (sql, elapsed_sec, raw_response)"""
     t0 = time.time()
     try:
-        r = requests.post('http://127.0.0.1:11434/api/generate', json={
+        r = requests.post(f'{OLLAMA_URL}/api/generate', json={
             'model': model,
             'prompt': f"{SYSTEM_PROMPT}\n\nQ: {question}\nA:",
             'stream': False,
@@ -630,7 +640,7 @@ def call_local_llm_prompt(model, prompt, timeout=180):
     """Call local LLM with a fully constructed prompt."""
     t0 = time.time()
     try:
-        r = requests.post('http://127.0.0.1:11434/api/generate', json={
+        r = requests.post(f'{OLLAMA_URL}/api/generate', json={
             'model': model,
             'prompt': prompt,
             'stream': False,
@@ -820,7 +830,7 @@ def parse_args():
     parser.add_argument('--max-retries', type=int, default=2, help='Repair retries per question after first attempt')
     parser.add_argument('--pass-all', action='store_true', help='Force PASS by falling back to gold SQL if all attempts fail')
     parser.add_argument('--sleep-cloud', type=float, default=5.0, help='Delay between cloud questions (seconds)')
-    parser.add_argument('--output-dir', default='/home/bcdr/phd/PhD/phd/papers/Project/datasets/real_infra_runs', help='Directory to store benchmark_results_*.json')
+    parser.add_argument('--output-dir', default=RUNS_DIR, help='Directory to store benchmark_results_*.json')
     return parser.parse_args()
 
 

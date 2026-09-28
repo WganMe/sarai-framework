@@ -50,8 +50,8 @@ plt.rcParams.update({
     'axes.spines.right': False,
 })
 
-OUTDIR = '/var/www/Article_Title/figures'
-BENCHMARK_DIR = '/var/www/datasets'
+OUTDIR = os.environ.get('FIG_OUTDIR', os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'figures')))
+BENCHMARK_DIR = os.environ.get('BENCHMARK_DIR', os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'datasets')))
 
 # Colour palette
 COLOURS = {

@@ -11,8 +11,11 @@ from collections import defaultdict
 from sarai_risk_mechanisms import SQLAnomalyScorer, ConfidenceGate, DataDriftMonitor, SovereigntyMetrics
 
 # ── Configuration ─────────────────────────────────────────────────────────────
-BENCHMARK_DIR = os.environ.get('BENCHMARK_DIR', '/var/www/datasets')
-TEX_FILE = os.environ.get('TEX_FILE', '/var/www/applsci/1/template.tex')
+# Defaults resolve relative to this file so a fresh clone runs unconfigured.
+_HERE = os.path.dirname(os.path.abspath(__file__))
+BENCHMARK_DIR = os.environ.get(
+    'BENCHMARK_DIR', os.path.normpath(os.path.join(_HERE, '..', 'datasets')))
+TEX_FILE = os.environ.get('TEX_FILE', '')
 PAPER_MODELS = {
     'Llama 3.2 3B':  {'source': 'Local',  'params': '3B',  'sigma_i': 1.0},
     'Llama 3.1 8B':  {'source': 'Local',  'params': '8B',  'sigma_i': 1.0},

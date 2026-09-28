@@ -1,16 +1,23 @@
 #!/usr/bin/env python3
 """Deploy/Update the Context-Aware BI Framework unified workflow to the orchestration platform."""
 import json
+import os
 import urllib.request
 import urllib.error
 
-# Read API key from .env
-API_KEY = None
-with open('/var/www/.env') as f:
-    for line in f:
-        if line.startswith('WORKFLOW_API_KEY='):
-            API_KEY = line.split('=', 1)[1].strip().strip('"')
-            break
+# Read the workflow API key from the environment, falling back to an .env file.
+# WORKFLOW_API_KEY / WORKFLOW_ENV_FILE let this run away from the reference box.
+API_KEY = os.environ.get('WORKFLOW_API_KEY')
+_ENV_FILE = os.environ.get('WORKFLOW_ENV_FILE', '/var/www/.env')
+if not API_KEY:
+    try:
+        with open(_ENV_FILE) as f:
+            for line in f:
+                if line.startswith('WORKFLOW_API_KEY='):
+                    API_KEY = line.split('=', 1)[1].strip().strip('"')
+                    break
+    except FileNotFoundError:
+        API_KEY = None
 
 BASE = 'http://127.0.0.1:5678/api/v1'
 WF_ID = 'zpJWWljIklNinXF4'

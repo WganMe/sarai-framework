@@ -2,9 +2,12 @@
 """
 Create dashboard charts (Slices) and dashboards for all 5 business domains.
 Uses the dashboard platform's internal Python API via Flask app context.
+
+Run from within the platform's virtualenv. Set DASHBOARD_CONFIG_PATH to the
+platform's config module; the fallback is a conventional install location.
 """
 import sys, os, json, logging
-os.environ['DASHBOARD_CONFIG_PATH'] = '/opt/dashboard/config/dashboard_config.py'
+os.environ.setdefault('DASHBOARD_CONFIG_PATH', '/opt/dashboard/config/dashboard_config.py')
 
 from superset.app import create_app
 app = create_app()

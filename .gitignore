@@ -12,12 +12,20 @@ venv/
 
 # Raw datasets and generated benchmark outputs
 datasets/raw_tables/
-datasets/*.json
 datasets/real_infra_runs/
-datasets/benchmark_results_*.json
 datasets/analysis_results.json
 datasets/metadata/source_validation_report.json
 datasets/metadata/*.json
+
+# Benchmark runs: excluded by default, because a run directory accumulates
+# superseded attempts and re-runs that the manuscript does not cite.
+datasets/benchmark_results_*.json
+# ...except the ONE run the manuscript cites. revision_stats.py,
+# deployment_cost.py and the CI assertion all read this file, so excluding it
+# made the repository unable to reproduce its own reported numbers: a reader
+# would clone the code and find its only input missing. Negative pattern, so it
+# must come after the exclusion above to take effect.
+!datasets/benchmark_results_20260219_054729.json
 
 # Generated figures and local logs
 *.pdf
