@@ -82,7 +82,14 @@ federation engine, the local model server, the databases and the cache.
 
 ## License and citation
 
-See `CITATION.cff` in the companion manuscript repository. The datasets are
-public: four from Kaggle (Olist e-commerce, healthcare, credit-card fraud, supply
-chain) and one from the UCI repository (online retail). Their provenance is
-recorded in `datasets/metadata/`.
+The code is [CC BY 4.0](LICENSE). The archived artefact has a DOI:
+
+> **10.5281/zenodo.23010102** — <https://doi.org/10.5281/zenodo.23010102>
+
+`CITATION.cff` carries the same identifier, so GitHub's "Cite this repository"
+button produces a correct citation. The five public datasets are **not**
+redistributed here and keep their own upstream licences (two of them
+non-commercial): four from Kaggle — Olist e-commerce, healthcare, credit-card
+fraud, supply chain — and one from the UCI repository (online retail). Their
+provenance is recorded in `datasets/metadata/`, and `REPRODUCIBILITY.md` says how
+to obtain each one.
