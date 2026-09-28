@@ -137,16 +137,13 @@ jobs:
                   python3 tools/wait_for_engine.py
                   curl -fsS http://localhost:8080/v1/info | head -c 200; echo
 
-            # Load from datasets/sources/ -- the files the previous step fetched,
-            # and the ones the ETL reads. This job previously ran
-            # load_federated_tables.py, which reads datasets/raw_tables/, i.e. a
-            # different directory that the fetch never populates: the stack came
-            # up empty and every query would have failed. load_all_domains.py is
-            # the ETL for the five sources and needs no local paths of its own.
-            # datasets/raw_tables/ is tracked in Git LFS and covers all five
-            # domains, including the e-commerce tables that load_all_domains.py
-            # does not build. It is exactly what the benchmark queries, so load
-            # from it rather than re-deriving from datasets/sources/.
+            # Load from datasets/raw_tables/, which is tracked through Git LFS and
+            # covers all five domains. Use real_infra_load.py: it carries explicit
+            # typed DDL for all 22 tables, and the types are load-bearing. With every
+            # column as TEXT, `avg()`, `sum()` and numeric comparisons fail with
+            #   "Unexpected parameters (varchar) for function avg"
+            # because the engine resolves function signatures by type. This is the
+            # loader the reported measurements were taken with.
             - name: Load the five public datasets
               env:
                   # real_infra_load.py requires these explicitly (os.environ[...]).
@@ -160,7 +157,7 @@ jobs:
                   MARIADB_DB: bcdr_framework
                   MARIADB_USER: framework
                   MARIADB_PASSWORD: framework
-              run: python3 framework/load_federated_tables.py
+              run: python3 framework/real_infra_load.py
 
             - name: Assert every gold query executes and validates
               run: python3 tools/verify_gold_queries.py

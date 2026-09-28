@@ -59,8 +59,11 @@ curl -fsS http://localhost:8080/v1/info | "$PY" -c \
   'import json,sys; d=json.load(sys.stdin); print("  nodeVersion:", d.get("nodeVersion",{}).get("version"), "| environment:", d.get("environment"))' \
   2>/dev/null || true
 
-say "loading the five domains"
-"$PY" framework/load_federated_tables.py
+say "loading the 22 tables into both databases"
+# real_infra_load.py carries explicit typed DDL, and the types matter: with every
+# column as TEXT the engine fails with "Unexpected parameters (varchar) for
+# function avg", because it resolves function signatures by type.
+"$PY" framework/real_infra_load.py
 
 say "verifying every gold query executes and satisfies its validator"
 "$PY" tools/verify_gold_queries.py

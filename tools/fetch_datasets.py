@@ -323,9 +323,8 @@ def main():
         return 2
 
     print(f"\n  all {len(EXPECTED)} expected files present. Next:")
-    print("    python3 framework/load_all_domains.py    # source -> both databases")
-    print("    python3 framework/load_federated_tables.py  # raw tables -> both databases")
-    print("    python3 tools/verify_gold_queries.py     # execute the 50 gold queries")
+    print("    python3 framework/real_infra_load.py     # raw tables -> both databases")
+    print("    python3 tools/verify_gold_queries.py      # execute the 50 gold queries")
     return 0
 
 

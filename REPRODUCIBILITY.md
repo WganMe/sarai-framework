@@ -17,17 +17,22 @@ anyone.
 python3 tools/assert_published_values.py
 
 # both halves, from a clean clone
-git lfs install && git lfs pull           # the datasets are tracked in LFS
-python3 framework/load_federated_tables.py
-python3 tools/verify_gold_queries.py
+git lfs install --local && git lfs pull   # the datasets are tracked in LFS
+docker compose up -d
+python3 tools/wait_for_engine.py          # waits for "starting": false
+python3 framework/real_infra_load.py      # 22 tables, with typed DDL
+python3 tools/verify_gold_queries.py      # executes all 50 gold queries
 
 # or all of the above
 ./reproduce.sh
 ```
 
-The loader produces **8 fact tables in PostgreSQL and 14 dimension tables in
-MariaDB** — the same shape the manuscript reports, read from the CSV headers
-rather than from a schema file.
+The loader creates **8 fact tables in PostgreSQL and 14 dimension tables in
+MariaDB** — the same shape the manuscript reports. The column types are
+load-bearing: with every column typed as TEXT, the engine fails with
+*"Unexpected parameters (varchar) for function avg"*, because it resolves function
+signatures by type. That is why `real_infra_load.py`, which carries explicit typed
+DDL for all 22 tables, is the loader used here and in CI.
 
 Measured on a clean clone before publishing:
 
@@ -125,7 +130,7 @@ This is why the version list in the manuscript differs from what any one machine
 shows today: it is a record of the deployment as built, across more than one
 host, over a period of months. The row and table counts are the part that must
 match a specific database — and those are the numbers to check against
-`load_federated_tables.py` output.
+`framework/real_infra_load.py` output.
 
 ## Why the data half is the strongest CI check available
 
@@ -141,7 +146,8 @@ carry.
 | `datasets/raw_tables/` | the canonical dataset, in Git LFS (8 + 14 tables) |
 | `docker-compose.yml` | PostgreSQL 13 + MariaDB 10.11 + PrestoDB 0.284 |
 | `framework/presto/etc/` | the engine's full config: config, jvm, node, catalog |
-| `framework/load_federated_tables.py` | loads `datasets/raw_tables/` into both |
+| `framework/real_infra_load.py` | loads `datasets/raw_tables/` into both, with typed DDL |
+| `tools/wait_for_engine.py` | waits for `"starting": false`, not just HTTP 200 |
 | `tools/verify_gold_queries.py` | executes and validates all 50 gold queries |
 | `tools/assert_published_values.py` | the 16 analysis assertions (claim A) |
 | `tools/fetch_datasets.py` | alternative: pull the data from Kaggle/UCI |

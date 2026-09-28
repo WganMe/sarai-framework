@@ -131,6 +131,11 @@ def load_postgres():
     conn = psycopg2.connect(**PG_CONN)
     conn.autocommit = True
     cur = conn.cursor()
+    # The DDL below is unqualified, so it resolves on the search_path. The queries
+    # reference postgresql.public.<table>, which the connector maps to the public
+    # schema in PostgreSQL, so that is where the tables must land.
+    cur.execute("CREATE SCHEMA IF NOT EXISTS public")
+    cur.execute("SET search_path TO public")
     for table, cols in PG_TABLES.items():
         csv_path = os.path.join(PG_CSV_DIR, f"{table}.csv")
         if not os.path.exists(csv_path):
