@@ -30,15 +30,30 @@ API with the token in `IEEETC/.env` (`ZENODO_TOKEN`, 60 chars, scope
        -o /tmp/sarai-framework-1.0.0.tar.gz HEAD
    ```
 
-   `git archive` includes only tracked files, so `datasets/sources/`,
-   `datasets/raw_tables/` and any downloaded `*.tar.gz` are excluded by
-   construction rather than by remembering.
+   `git archive` includes only tracked files, so the downloaded bundle and the
+   derived `raw_tables/` are excluded by construction rather than by remembering.
+
+   > **Verify, do not trust.** Whether `git archive` expands the Git-LFS files to
+   > real content or emits 134-byte **pointers depends on the local LFS
+   > configuration**. Measured on this machine: with LFS's filters present it
+   > expands (archive 143 MB, `creditcard.csv` = 150,828,752 bytes); with
+   > `filter.lfs.process` cleared it emits pointers (archive 145 KB,
+   > `creditcard.csv` = 134 bytes). A depositor built from pointers is *not*
+   > self-contained. So check explicitly:
+
+   ```bash
+   tar -xzOf /tmp/sarai-framework-1.0.0.tar.gz \
+       '*/datasets/sources/financial/creditcard.csv' | wc -c
+   # must be 150828752, not 134
+   ```
+
+   If it reports 134, run `git lfs install` and repeat.
 
 2. **Verify the payload before uploading** (this is where the IEEETC deposit was
    saved from two mistakes — a committed build artefact and a leaked setting):
 
    ```bash
-   tar -tzf /tmp/sarai-framework-1.0.0.tar.gz | grep -E '\.env$|\.git/|sources/|raw_tables/|\.tar\.gz$'
+   tar -tzf /tmp/sarai-framework-1.0.0.tar.gz | grep -E '\.env$|\.git/|raw_tables/|\.tar\.gz$'
    # must print nothing
    ```
 

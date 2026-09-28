@@ -39,13 +39,14 @@ services:
       timeout: 5s
       retries: 30
 
-  # PRESTO_HOME in this image is /opt/presto-server, and the image already ships
-  # its own config.properties, jvm.config and node.properties. Mounting an empty
-  # etc/ over the top removes them and the engine refuses to start with
-  # "Config file is missing: /opt/presto-server/etc/config.properties".
-  # So mount ONLY the catalog directory, which defines the two connectors that
-  # every query in the benchmark references:
-  #   postgresql.public.<table>   JOIN   mysql.bcdr_framework.<table>
+  # PRESTO_HOME in this image is /opt/presto-server, and the 0.284 image ships no
+  # etc/ at all -- it fails with "Config file is missing:
+  # /opt/presto-server/etc/config.properties". So supply the whole etc/ tree,
+  # which is why framework/presto/etc/ holds all four files rather than only the
+  # catalog: config.properties, jvm.config, node.properties, catalog/.
+  #
+  # The catalog defines the two connectors every query in the benchmark
+  # references:  postgresql.public.<table>  JOIN  mysql.bcdr_framework.<table>
   presto:
     image: prestodb/presto:0.284
     ports: ["8080:8080"]
@@ -53,7 +54,7 @@ services:
       postgres: {condition: service_healthy}
       mariadb: {condition: service_healthy}
     volumes:
-      - ./framework/presto/catalog:/opt/presto-server/etc/catalog:ro
+      - ./framework/presto/etc:/opt/presto-server/etc:ro
     healthcheck:
       # curl is not installed in the image; python3 is, so probe with that.
       test: ["CMD-SHELL", "python3 -c \"import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8080/v1/info', timeout=5).status==200 else 1)\""]
