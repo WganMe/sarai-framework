@@ -95,10 +95,23 @@ concept DOI is the stable one to quote.
    reports an md5; `md5sum dist/sarai-framework-1.1.0.tar.gz` must match it before
    you publish, not after.
 
-7. **Write the DOI back** into `README.md`, `NOTICE.md`, `CITATION.cff`,
-   `REPRODUCIBILITY.md`, the GitHub repository description and homepage, and the
-   Zenodo `related_identifiers`. A DOI that appears in five places and four of
-   them are wrong is how the last record ended up pointing at itself.
+7. **Verify the published snapshot against its tag.**
+
+   ```bash
+   python3 tools/verify_deposit.py 10.5281/zenodo.<id> v<X.Y.Z>
+   ```
+
+   It re-downloads the file, compares the md5 with Zenodo's own record, and
+   compares every member's **content** — not just its name — against
+   `git archive` of the tag. Both v1.1.0 and v1.2.0 failed this at first, because
+   the version DOI was written into `ZENODO_DEPOSIT.md` in a commit that landed
+   *after* the archive was built and the tag moved onto it. Every file was
+   present and one of them said something the archive did not.
+
+8. **Write the DOI back only for the next version.** A published archive is
+   frozen; its notes cannot learn the DOI that names it. Cite the **concept DOI**
+   in the tree, so the sentence is true before the version exists, and record
+   version DOIs in the table above rather than inside the file they describe.
 
 ## Things that bit us last time
 

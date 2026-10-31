@@ -39,6 +39,15 @@ git rev-parse -q --verify "refs/tags/$REF" >/dev/null 2>&1 || \
 REF_SHA="$(git rev-parse "$REF^{commit}")"
 echo "building $NAME from $REF ($(git rev-parse --short "$REF_SHA"))"
 
+# The archive is built from a tag, and the tag is what readers and Zenodo both
+# point at. If the tag is later moved -- to record the version DOI in the notes,
+# for instance -- the tag no longer names the archived tree, and the claim
+# "tag vX matches the archived tree" becomes false. Record the commit in the
+# manifest, and compare the two after publishing.
+if git rev-parse -q --verify "refs/tags/$REF" >/dev/null 2>&1; then
+    [ "$(git rev-parse "refs/tags/$REF^{commit}")" = "$REF_SHA" ] || fail "tag $REF is not at $REF_SHA"
+fi
+
 # ---------------------------------------------------------------- build
 mkdir -p "$DIST"
 rm -f "$ARCHIVE"
