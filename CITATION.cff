@@ -10,9 +10,8 @@ abstract: >-
   50/50 gold queries execute and satisfy their own validators in about 60 s; the
   SQL anomaly detector reaches F1 = 0.980 on adversarial injection workloads.
   The analysis half of reproducibility runs anywhere, and the data half runs
-  against PrestoDB 0.284. Both are declared as jobs in
-  .github/workflows/verify.yml; see REPRODUCIBILITY.md for their current
-  execution status.
+  against PrestoDB 0.284. Both are jobs in .github/workflows/verify.yml and run
+  on every push.
 type: software
 license: CC-BY-4.0
 version: "1.1.0"

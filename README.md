@@ -1,14 +1,8 @@
 # SARAI: Sovereignty-Aware Risk Assessment Infrastructure
 
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.23839422.svg)](https://doi.org/10.5281/zenodo.23839422)
+[![verify](https://github.com/WganMe/sarai-framework/actions/workflows/verify.yml/badge.svg)](https://github.com/WganMe/sarai-framework/actions/workflows/verify.yml)
 [![License: CC BY 4.0](https://img.shields.io/badge/License/CC%20BY%204.0-lightgrey.svg)](LICENSE)
-
-<!-- No CI badge. The workflow is correct and both jobs pass when run by hand,
-     but GitHub currently refuses to start them: "the job was not started
-     because your account is locked due to a billing issue". A badge that renders
-     red for a billing reason says "this code is broken", which is not what is
-     true. Restore the badge once Actions runs again:
-     [![verify](.../verify.yml/badge.svg)](.../verify.yml) -->
 
 Implementation code for reliable federated business intelligence and
 sovereignty-aware AI risk assessment.

@@ -8,7 +8,7 @@ anyone.
 | | Claim | Needs | Where it runs |
 | --- | --- | --- | --- |
 | **A** | The **analysis** reproduces — latency statistics, cost model, graded-sovereignty ladder | the committed run data + matplotlib | anywhere, ~30 s |
-| **B** | The **benchmark** reproduces — 50 gold queries through the federated engine against a model | PostgreSQL + MariaDB + a federation engine (+ a model for the model half) | `reproduce.sh` (data half needs no model) |
+| **B** | The **benchmark** reproduces — 50 gold queries through the federated engine against a model | PostgreSQL + MariaDB + a federation engine (+ a model for the model half) | `reproduce.sh` locally, or the CI `federation` job (data half needs no model) |
 
 ## Run it
 
@@ -34,12 +34,12 @@ load-bearing: with every column typed as TEXT, the engine fails with
 signatures by type. That is why `real_infra_load.py`, which carries explicit typed
 DDL for all 22 tables, is the loader to use.
 
-> **CI status: not currently executing.** `.github/workflows/verify.yml` declares
-> both jobs and both passed on every push up to `v1.0.0`. GitHub now refuses to
-> start them — *"the job was not started because your account is locked due to a
-> billing issue"* — so a green badge would be a claim the runner is not making.
-> The analysis half was re-run by hand on the v1.1.0 tree and all 16 assertions
-> passed; the command is the first one in **Run it**, above.
+> **CI.** `.github/workflows/verify.yml` runs the analysis half and the federation
+  half on every push. The federation job starts PostgreSQL, MariaDB and PrestoDB,
+  loads the 22 tables from the frozen dataset release, and executes all 50 gold
+  queries; it needs no model and no Kaggle token, which is what makes it
+  runnable in CI. The status is the badge in the README — a claim that lives in a
+  badge cannot go stale the way a sentence in a frozen archive does.
 
 Measured on a clean clone before publishing:
 
@@ -161,5 +161,5 @@ carry.
 | `tools/verify_gold_queries.py` | executes and validates all 50 gold queries |
 | `tools/assert_published_values.py` | the 16 analysis assertions (claim A) |
 | `tools/fetch_datasets.py` | alternative: pull the data from Kaggle/UCI |
-| `.github/workflows/verify.yml` | both jobs, with their scope stated in the header; not currently executing (see above) |
+| `.github/workflows/verify.yml` | both jobs, with their scope stated in the header |
 | `reproduce.sh` | the whole thing, in order |

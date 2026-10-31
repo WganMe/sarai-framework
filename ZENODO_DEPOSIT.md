@@ -8,7 +8,8 @@ itself.
 | --- | --- | --- |
 | v1.0.0 | `10.5281/zenodo.23010102` | **Withdrawn** 2026-10-02. Payload was 152,429 bytes of LFS pointer stubs. |
 | v1.1.0 | `10.5281/zenodo.23839423` | First clean payload: 164,775 bytes, md5 `bf8ed854390f00364fe2a2d8603708a5`, 48 files, no pointers. Its README still said a DOI "is being re-issued", which was true when it was written and false an hour later. |
-| v1.2.0 | `10.5281/zenodo.23839523` | 165,719 bytes, md5 `052b321e1fbc93831a169602e579668f`. Cites the concept DOI, so its own statement stays true in every later version. |
+| v1.2.0 | `10.5281/zenodo.23839523` | 165,719 bytes, md5 `052b321e1fbc93831a169602e579668f`. Cites the concept DOI, so its own statement stays true in every later version. Its README still carried the CI-status aside written while Actions was billing-locked. |
+| v1.3.0 | (minted on publish) | Drops the transient CI-status prose in favour of the badge, which cannot go stale. |
 
 The v1.0.0 post-mortem below is kept so the same defect is not rebuilt.
 
