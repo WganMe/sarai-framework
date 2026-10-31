@@ -10,6 +10,7 @@ itself.
 | v1.1.0 | `10.5281/zenodo.23839423` | First clean payload: 164,775 bytes, md5 `bf8ed854390f00364fe2a2d8603708a5`, 48 files, no pointers. Its README still said a DOI "is being re-issued", which was true when it was written and false an hour later. |
 | v1.2.0 | `10.5281/zenodo.23839523` | 165,719 bytes, md5 `052b321e1fbc93831a169602e579668f`. Cites the concept DOI, so its own statement stays true in every later version. Its README still carried the CI-status aside written while Actions was billing-locked. |
 | v1.3.0 | `10.5281/zenodo.23839733` | 168,068 bytes, md5 `3ca468ed9e2c4b363a0d1d011ed6ba83`. Drops the transient CI-status prose in favour of the badge, which cannot go stale. |
+| v1.4.0 | (minted on publish) | Describes the data routes as they are: LFS serves again, so "not in the tree" and "route unavailable" were replaced by the mechanism. |
 
 The v1.0.0 post-mortem below is kept so the same defect is not rebuilt.
 
