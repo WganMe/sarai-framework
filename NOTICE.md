@@ -68,11 +68,18 @@ If you use the code or the measured outputs, cite the published manuscript:
 > Business Intelligence*. Results in Engineering 32, 113508.
 > <https://doi.org/10.1016/j.rineng.2026.113508>
 
-Tag [`v1.0.0`](https://github.com/WganMe/sarai-framework/releases/tag/v1.0.0)
-pins the code to the reviewed state; the current revision is `1.1.0`.
+To cite the software itself:
 
-Machine-readable metadata is in [`CITATION.cff`](CITATION.cff). An archival DOI
-was minted for v1.0.0 and then withdrawn, because that payload carried Git-LFS
-pointer stubs instead of data while presenting itself as self-contained. Its
-record is gone and the identifier is not reused here: a citation that resolves
-to a tombstone is worse than a citation that names a repository and a tag.
+> Alnahari, W., Arbaaeen, A., Hasanin, T., and Jambi, S. (2026). *SARAI:
+> Sovereignty-Aware Risk Assessment Infrastructure for Reliable Federated
+> Business Intelligence* (Version 1.1.0) [Computer software]. Zenodo.
+> <https://doi.org/10.5281/zenodo.23839423>
+
+Tag [`v1.1.0`](https://github.com/WganMe/sarai-framework/releases/tag/v1.1.0)
+matches the archived tree.
+
+Machine-readable metadata is in [`CITATION.cff`](CITATION.cff). A v1.0.0 record
+existed briefly and was withdrawn, because its payload carried Git-LFS pointer
+stubs instead of data while presenting itself as self-contained. That identifier
+is dead and is not referenced anywhere in this repository; this record replaces
+it, and the deposit tooling now refuses to build such a payload.

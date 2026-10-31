@@ -1,7 +1,14 @@
 # SARAI: Sovereignty-Aware Risk Assessment Infrastructure
 
-[![verify](https://github.com/WganMe/sarai-framework/actions/workflows/verify.yml/badge.svg)](https://github.com/WganMe/sarai-framework/actions/workflows/verify.yml)
-[![License: CC BY 4.0](https://img.shields.io/badge/License-CC%20BY%204.0-lightgrey.svg)](LICENSE)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.23839423.svg)](https://doi.org/10.5281/zenodo.23839423)
+[![License: CC BY 4.0](https://img.shields.io/badge/License/CC%20BY%204.0-lightgrey.svg)](LICENSE)
+
+<!-- No CI badge. The workflow is correct and both jobs pass when run by hand,
+     but GitHub currently refuses to start them: "the job was not started
+     because your account is locked due to a billing issue". A badge that renders
+     red for a billing reason says "this code is broken", which is not what is
+     true. Restore the badge once Actions runs again:
+     [![verify](.../verify.yml/badge.svg)](.../verify.yml) -->
 
 Implementation code for reliable federated business intelligence and
 sovereignty-aware AI risk assessment.
@@ -98,10 +105,16 @@ published, and it names this repository as the artefact location:
 > Business Intelligence*. Results in Engineering 32, 113508.
 > <https://doi.org/10.1016/j.rineng.2026.113508>
 
-Tag [`v1.0.0`](https://github.com/WganMe/sarai-framework/releases/tag/v1.0.0)
-pins the code to the reviewed state. An archival DOI on Zenodo is being
-re-issued; until it resolves, this repository and its tags are the addressable
-record, and no DOI is advertised here that does not.
+The code is archived at:
+
+> **10.5281/zenodo.23839423** — <https://doi.org/10.5281/zenodo.23839423> (v1.1.0, the version of record)
+>
+> **10.5281/zenodo.23839422** — <https://doi.org/10.5281/zenodo.23839422> (concept DOI, always the latest version)
+
+`CITATION.cff` carries both, so GitHub's "Cite this repository" button produces a
+correct citation. Tag
+[`v1.1.0`](https://github.com/WganMe/sarai-framework/releases/tag/v1.1.0)
+matches the archived tree.
 
 The five public datasets are **not** redistributed here and keep their own
 upstream licences (two of them non-commercial): four from Kaggle — Olist

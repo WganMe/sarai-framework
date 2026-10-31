@@ -1,6 +1,9 @@
 # Zenodo deposit — SARAI framework
 
-Status: **v1.0.0 withdrawn; v1.1.0 to be deposited.**
+Status: **published.** v1.1.0 is archived at `10.5281/zenodo.23839423`
+(concept DOI `10.5281/zenodo.23839422`), 164,775 bytes, md5
+`bf8ed854390f00364fe2a2d8603708a5`. The v1.0.0 record was withdrawn; the
+post-mortem below is kept so the same defect is not rebuilt.
 
 The v1.0.0 record (`10.5281/zenodo.23010102`) was deleted on 2026-10-02 and now
 resolves to a tombstone (HTTP 410). The reason is recorded in the record history
@@ -18,7 +21,7 @@ files of a published record are immutable.
 | Repository | `github.com/WganMe/sarai-framework` (**public**) |
 | Upload type | `software` — **not** `journal article`: Zenodo cannot describe both in one record |
 | Licence | CC BY 4.0 (code only; the five datasets keep their upstream licences) |
-| Version | `v1.1.0` |
+| Version | `v1.1.0` (archived: `10.5281/zenodo.23839423`) |
 | Payload | `tools/make_deposit.sh` → tracked files, data paths excluded |
 | Metadata | `.zenodo.json` (validated) and `CITATION.cff` |
 | Datasets | **Not** in this deposit — the 500 MB lives in the GitHub release `datasets-v1` and is enumerated in `DATA_SOURCES.md`. |

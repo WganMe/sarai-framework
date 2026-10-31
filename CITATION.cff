@@ -10,13 +10,21 @@ abstract: >-
   50/50 gold queries execute and satisfy their own validators in about 60 s; the
   SQL anomaly detector reaches F1 = 0.980 on adversarial injection workloads.
   The analysis half of reproducibility runs anywhere, and the data half runs
-  against PrestoDB 0.284; both run in continuous integration.
+  against PrestoDB 0.284. Both are declared as jobs in
+  .github/workflows/verify.yml; see REPRODUCIBILITY.md for their current
+  execution status.
 type: software
 license: CC-BY-4.0
 version: "1.1.0"
 date-released: "2026-10-31"
 repository-code: "https://github.com/WganMe/sarai-framework"
 identifiers:
+  - type: doi
+    value: "10.5281/zenodo.23839423"
+    description: "Archived version of record, v1.1.0"
+  - type: doi
+    value: "10.5281/zenodo.23839422"
+    description: "Concept DOI; resolves to the latest version"
   - type: doi
     value: "10.1016/j.rineng.2026.113508"
     description: "The published manuscript this artefact accompanies"
