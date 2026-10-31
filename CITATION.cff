@@ -14,16 +14,13 @@ abstract: >-
   on every push.
 type: software
 license: CC-BY-4.0
-version: "1.1.0"
+version: "1.3.0"
 date-released: "2026-10-31"
 repository-code: "https://github.com/WganMe/sarai-framework"
 identifiers:
   - type: doi
     value: "10.5281/zenodo.23839422"
-    description: "Concept DOI; always resolves to the latest archived version"
-  - type: doi
-    value: "10.5281/zenodo.23839523"
-    description: "The v1.2.0 snapshot specifically"
+    description: "Archived software; always resolves to the latest version"
   - type: doi
     value: "10.1016/j.rineng.2026.113508"
     description: "The published manuscript this artefact accompanies"
