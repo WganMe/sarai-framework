@@ -1,6 +1,6 @@
 # SARAI: Sovereignty-Aware Risk Assessment Infrastructure
 
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.23839423.svg)](https://doi.org/10.5281/zenodo.23839423)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.23839422.svg)](https://doi.org/10.5281/zenodo.23839422)
 [![License: CC BY 4.0](https://img.shields.io/badge/License/CC%20BY%204.0-lightgrey.svg)](LICENSE)
 
 <!-- No CI badge. The workflow is correct and both jobs pass when run by hand,
@@ -107,14 +107,17 @@ published, and it names this repository as the artefact location:
 
 The code is archived at:
 
-> **10.5281/zenodo.23839423** — <https://doi.org/10.5281/zenodo.23839423> (v1.1.0, the version of record)
->
-> **10.5281/zenodo.23839422** — <https://doi.org/10.5281/zenodo.23839422> (concept DOI, always the latest version)
+> **10.5281/zenodo.23839422** — <https://doi.org/10.5281/zenodo.23839422>
 
-`CITATION.cff` carries both, so GitHub's "Cite this repository" button produces a
-correct citation. Tag
-[`v1.1.0`](https://github.com/WganMe/sarai-framework/releases/tag/v1.1.0)
-matches the archived tree.
+Cite that **concept DOI**, not a version DOI. It always resolves to the latest
+archived snapshot, so it stays correct as new versions are published — which
+matters here, because each archive contains this file and therefore contains the
+identifier it is cited by. A version DOI written into the tree would be
+self-referential and wrong the moment the next version is minted.
+
+`CITATION.cff` carries it, so GitHub's "Cite this repository" button produces a
+correct citation. [`ZENODO_DEPOSIT.md`](ZENODO_DEPOSIT.md) lists the version DOIs
+and what each snapshot contains.
 
 The five public datasets are **not** redistributed here and keep their own
 upstream licences (two of them non-commercial): four from Kaggle — Olist

@@ -1,9 +1,16 @@
 # Zenodo deposit — SARAI framework
 
-Status: **published.** v1.1.0 is archived at `10.5281/zenodo.23839423`
-(concept DOI `10.5281/zenodo.23839422`), 164,775 bytes, md5
-`bf8ed854390f00364fe2a2d8603708a5`. The v1.0.0 record was withdrawn; the
-post-mortem below is kept so the same defect is not rebuilt.
+Status: **published.** Concept DOI `10.5281/zenodo.23839422`; cite that, not a
+version DOI, because every archive contains this file and would otherwise cite
+itself.
+
+| Version | Version DOI | Notes |
+| --- | --- | --- |
+| v1.0.0 | `10.5281/zenodo.23010102` | **Withdrawn** 2026-10-02. Payload was 152,429 bytes of LFS pointer stubs. |
+| v1.1.0 | `10.5281/zenodo.23839423` | First clean payload: 164,775 bytes, md5 `bf8ed854390f00364fe2a2d8603708a5`, 48 files, no pointers. Its README still said a DOI "is being re-issued", which was true when it was written and false an hour later. |
+| v1.2.0 | (minted on publish) | Cites the concept DOI, so the statement stays true in every later version. |
+
+The v1.0.0 post-mortem below is kept so the same defect is not rebuilt.
 
 The v1.0.0 record (`10.5281/zenodo.23010102`) was deleted on 2026-10-02 and now
 resolves to a tombstone (HTTP 410). The reason is recorded in the record history

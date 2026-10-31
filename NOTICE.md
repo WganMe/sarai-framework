@@ -72,11 +72,11 @@ To cite the software itself:
 
 > Alnahari, W., Arbaaeen, A., Hasanin, T., and Jambi, S. (2026). *SARAI:
 > Sovereignty-Aware Risk Assessment Infrastructure for Reliable Federated
-> Business Intelligence* (Version 1.1.0) [Computer software]. Zenodo.
-> <https://doi.org/10.5281/zenodo.23839423>
+> Business Intelligence* [Computer software]. Zenodo.
+> <https://doi.org/10.5281/zenodo.23839422>
 
-Tag [`v1.1.0`](https://github.com/WganMe/sarai-framework/releases/tag/v1.1.0)
-matches the archived tree.
+That is the **concept DOI**: it resolves to the latest archived version and does
+not go stale when a new one is published.
 
 Machine-readable metadata is in [`CITATION.cff`](CITATION.cff). A v1.0.0 record
 existed briefly and was withdrawn, because its payload carried Git-LFS pointer

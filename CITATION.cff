@@ -20,11 +20,11 @@ date-released: "2026-10-31"
 repository-code: "https://github.com/WganMe/sarai-framework"
 identifiers:
   - type: doi
-    value: "10.5281/zenodo.23839423"
-    description: "Archived version of record, v1.1.0"
-  - type: doi
     value: "10.5281/zenodo.23839422"
-    description: "Concept DOI; resolves to the latest version"
+    description: "Concept DOI; always resolves to the latest archived version"
+  - type: doi
+    value: "10.5281/zenodo.23839423"
+    description: "The v1.1.0 snapshot specifically"
   - type: doi
     value: "10.1016/j.rineng.2026.113508"
     description: "The published manuscript this artefact accompanies"
