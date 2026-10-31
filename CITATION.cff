@@ -13,10 +13,13 @@ abstract: >-
   against PrestoDB 0.284; both run in continuous integration.
 type: software
 license: CC-BY-4.0
-version: "1.0.0"
-doi: "10.5281/zenodo.23010102"
-date-released: "2026-09-28"
+version: "1.1.0"
+date-released: "2026-10-31"
 repository-code: "https://github.com/WganMe/sarai-framework"
+identifiers:
+  - type: doi
+    value: "10.1016/j.rineng.2026.113508"
+    description: "The published manuscript this artefact accompanies"
 keywords:
   - federated text-to-SQL
   - business intelligence

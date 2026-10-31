@@ -17,7 +17,7 @@ anyone.
 python3 tools/assert_published_values.py
 
 # both halves, from a clean clone
-git lfs install --local && git lfs pull   # the datasets are tracked in LFS
+python3 tools/fetch_datasets.py --only release   # one request, no Kaggle token
 docker compose up -d
 python3 tools/wait_for_engine.py          # waits for "starting": false
 python3 framework/real_infra_load.py      # 22 tables, with typed DDL
@@ -44,27 +44,30 @@ federation: 50/50 gold queries executed and validated in 60.6s
 
 ### Where the source data comes from
 
-The five public datasets are tracked **in Git LFS**, in `datasets/raw_tables/` —
-500 MB, and `creditcard.csv` alone is 144 MB, which is over GitHub's 100 MB
-per-file limit for ordinary git. So LFS is not a preference here: it is the only
-way that file can live in the repository at all, and a plain `git clone` without
-`git lfs pull` yields 134-byte pointers instead of data.
+The five public datasets are **not in this tree**. They are 500 MB under three
+different upstream licences, two of them non-commercial, so they are published
+frozen as the `datasets-v1` release asset (143 MiB, 15 files) and fetched in one
+command:
 
-`datasets/raw_tables/` is the **canonical** dataset and the one the benchmark
-queries. It holds 8 PostgreSQL fact tables and 14 MariaDB dimension tables
-covering all five domains, including the e-commerce tables that
-`load_all_domains.py` does not build (that script covers four domains).
+```bash
+python3 tools/fetch_datasets.py --only release
+```
 
-`tools/fetch_datasets.py` is the alternative route: it pulls the same data
-straight from Kaggle and UCI into `datasets/sources/`. Four of the five sources
-need a Kaggle token and only the UCI one does not, so LFS is the easier path for a
-reader. Both are supported.
+`framework/real_infra_load.py` then builds the form the benchmark actually
+queries: **8 PostgreSQL fact tables and 14 MariaDB dimension tables**, covering
+all five domains — including the e-commerce tables `load_all_domains.py` does not
+build, since that script covers four domains. `datasets/raw_tables_manifest.json`
+records the expected row and column count of each of the 22.
 
-**Metering caveat, for the repository owner.** LFS download bandwidth is charged
-to the repository owner and resets each month (10 GiB on Free and Pro alike, and
-CI downloads count against it), so roughly 20 full fetches a month fit inside the
-free quota. If that becomes a problem, the `datasets-v1` release asset holds the
-same files and is unmetered.
+`tools/fetch_datasets.py` also fetches from upstream instead of the release
+asset: four of the five sources need a Kaggle token, and only the UCI one does
+not. [`DATA_SOURCES.md`](DATA_SOURCES.md) documents all three routes and the
+licence of each source.
+
+> **`datasets/raw_tables/` in the git index holds LFS pointers, not data**, and
+> the LFS bandwidth budget is currently exhausted, so `git lfs pull` fails. The
+> dataset paths are marked `export-ignore`, so no archive of this repository
+> claims to ship them. Route 1 above needs neither LFS nor a Kaggle token.
 
 ## What is deliberately *not* covered, and why
 
@@ -143,7 +146,7 @@ carry.
 
 | Path | Role |
 | --- | --- |
-| `datasets/raw_tables/` | the canonical dataset, in Git LFS (8 + 14 tables) |
+| `datasets/raw_tables/` | LFS stubs in the index; built by `real_infra_load.py` from the release asset (8 + 14 tables) |
 | `docker-compose.yml` | PostgreSQL 13 + MariaDB 10.11 + PrestoDB 0.284 |
 | `framework/presto/etc/` | the engine's full config: config, jvm, node, catalog |
 | `framework/real_infra_load.py` | loads `datasets/raw_tables/` into both, with typed DDL |

@@ -1,14 +1,7 @@
 # SARAI: Sovereignty-Aware Risk Assessment Infrastructure
 
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.23010102.svg)](https://doi.org/10.5281/zenodo.23010102)
+[![verify](https://github.com/WganMe/sarai-framework/actions/workflows/verify.yml/badge.svg)](https://github.com/WganMe/sarai-framework/actions/workflows/verify.yml)
 [![License: CC BY 4.0](https://img.shields.io/badge/License-CC%20BY%204.0-lightgrey.svg)](LICENSE)
-
-<!-- No CI badge while the repository is private. GitHub's own badge URL returns
-     404 for a private repo, and shields.io renders "repo or workflow not found",
-     because it reads public data -- a badge reading "not found" is worse than no
-     badge. Add one when the repository becomes public:
-     [![verify](https://github.com/WganMe/sarai-framework/actions/workflows/verify.yml/badge.svg)](https://github.com/WganMe/sarai-framework/actions/workflows/verify.yml)
-     The workflow itself runs on every push and both its jobs are green. -->
 
 Implementation code for reliable federated business intelligence and
 sovereignty-aware AI risk assessment.
@@ -22,27 +15,30 @@ sovereignty-aware AI risk assessment.
 # Analysis half only — no services needed (~30 s)
 python3 tools/assert_published_values.py
 
-# Full run: start the federated stack, load the data, verify the federation
-# (the datasets arrive with the clone: git lfs pull)
+# Full run: fetch the data, start the federated stack, verify the federation
+python3 tools/fetch_datasets.py    # see DATA_SOURCES.md for the three routes
 ./reproduce.sh
 ```
 
 ## Data
 
-The five public source datasets are tracked **in Git LFS** (500 MB total; one file
-is 144 MB, over GitHub's 100 MB per-file limit, so LFS is the only way it can live
-here). A clone needs `git lfs pull`:
+The five public source datasets are **not** in this tree: 500 MB under three
+different upstream licences, two of them non-commercial. They are frozen as a
+release asset and fetched in one command.
 
 ```bash
-git lfs install          # once per machine
-git clone <repo> && cd sarai-framework
-git lfs pull             # materialises datasets/raw_tables/
+python3 tools/fetch_datasets.py --only release   # unmetered, no Kaggle token
 ```
 
-`datasets/raw_tables/` is the canonical dataset: 8 fact tables in PostgreSQL and
-14 dimension tables in MariaDB, covering all five domains. `tools/fetch_datasets.py`
-fetches the same data from upstream instead, if you prefer not to use LFS; see
-[`REPRODUCIBILITY.md`](REPRODUCIBILITY.md).
+[`DATA_SOURCES.md`](DATA_SOURCES.md) documents all three routes, the licence of
+each source, and why the data is not bundled. `datasets/raw_tables/` in the git
+index holds only LFS pointers — those paths are `export-ignore`, so no archive
+of this repository ever claims to ship data it does not contain.
+
+`framework/real_infra_load.py` builds the canonical form from the source CSVs:
+8 fact tables in PostgreSQL and 14 dimension tables in MariaDB.
+`datasets/raw_tables_manifest.json` records the expected row and column count of
+each, so a reader can check their build against the reported one.
 
 ## Included
 
@@ -92,14 +88,24 @@ federation engine, the local model server, the databases and the cache.
 
 ## License and citation
 
-The code is [CC BY 4.0](LICENSE). The archived artefact has a DOI:
+The code is [CC BY 4.0](LICENSE).
 
-> **10.5281/zenodo.23010102** — <https://doi.org/10.5281/zenodo.23010102>
+**Cite the version of record for now.** The manuscript this code accompanies is
+published, and it names this repository as the artefact location:
 
-`CITATION.cff` carries the same identifier, so GitHub's "Cite this repository"
-button produces a correct citation. The five public datasets are **not**
-redistributed here and keep their own upstream licences (two of them
-non-commercial): four from Kaggle — Olist e-commerce, healthcare, credit-card
-fraud, supply chain — and one from the UCI repository (online retail). Their
-provenance is recorded in `datasets/metadata/`, and `REPRODUCIBILITY.md` says how
-to obtain each one.
+> Alnahari, W., Arbaaeen, A., Hasanin, T., and Jambi, S. (2026). *SARAI:
+> Sovereignty-Aware Risk Assessment Infrastructure for Reliable Federated
+> Business Intelligence*. Results in Engineering 32, 113508.
+> <https://doi.org/10.1016/j.rineng.2026.113508>
+
+Tag [`v1.0.0`](https://github.com/WganMe/sarai-framework/releases/tag/v1.0.0)
+pins the code to the reviewed state. An archival DOI on Zenodo is being
+re-issued; until it resolves, this repository and its tags are the addressable
+record, and no DOI is advertised here that does not.
+
+The five public datasets are **not** redistributed here and keep their own
+upstream licences (two of them non-commercial): four from Kaggle — Olist
+e-commerce, healthcare, credit-card fraud, supply chain — and one from the UCI
+repository (online retail). Their provenance is recorded in
+`datasets/metadata/`, and [`DATA_SOURCES.md`](DATA_SOURCES.md) says how to obtain
+each one.

@@ -61,14 +61,18 @@ issue and a per-directory `LICENSE` can be added — dual licensing as CC BY 4.0
 
 ## Citation
 
-If you use the code or the measured outputs, please cite the archived artifact.
-The DOI names this exact file set:
+If you use the code or the measured outputs, cite the published manuscript:
 
-> Alnahari, W., Arbaaeen, A., Hasanin, T., and Jambi, S. (2026).
-> *SARAI: Sovereignty-Aware Risk Assessment Infrastructure for Reliable Federated
-> Business Intelligence* (Version 1.0.0) [Computer software]. Zenodo.
-> <https://doi.org/10.5281/zenodo.23010102>
+> Alnahari, W., Arbaaeen, A., Hasanin, T., and Jambi, S. (2026). *SARAI:
+> Sovereignty-Aware Risk Assessment Infrastructure for Reliable Federated
+> Business Intelligence*. Results in Engineering 32, 113508.
+> <https://doi.org/10.1016/j.rineng.2026.113508>
 
-Machine-readable metadata is in [`CITATION.cff`](CITATION.cff). This repository
-is the living copy; the archive at that DOI is the immutable version of record,
-which is why the verification assertions are quoted against it.
+Tag [`v1.0.0`](https://github.com/WganMe/sarai-framework/releases/tag/v1.0.0)
+pins the code to the reviewed state; the current revision is `1.1.0`.
+
+Machine-readable metadata is in [`CITATION.cff`](CITATION.cff). An archival DOI
+was minted for v1.0.0 and then withdrawn, because that payload carried Git-LFS
+pointer stubs instead of data while presenting itself as self-contained. Its
+record is gone and the identifier is not reused here: a citation that resolves
+to a tombstone is worse than a citation that names a repository and a tag.

@@ -1,64 +1,62 @@
 # Zenodo deposit — SARAI framework
 
-Status: **files ready, not yet deposited.**
+Status: **v1.0.0 withdrawn; v1.1.0 to be deposited.**
+
+The v1.0.0 record (`10.5281/zenodo.23010102`) was deleted on 2026-10-02 and now
+resolves to a tombstone (HTTP 410). The reason is recorded in the record history
+as a test record, and the payload's own defect is measurable: the uploaded
+archive was 152,429 bytes and its `creditcard.csv` member was a 134-byte Git-LFS
+pointer. It advertised a self-contained 143 MB payload and delivered none of it.
+
+Do not restore that DOI. Restoring it would restore the empty payload, and the
+files of a published record are immutable.
 
 ## What gets deposited
 
 | Item | Value |
 | --- | --- |
-| Repository | `github.com/WganMe/sarai-framework` (currently **private**) |
+| Repository | `github.com/WganMe/sarai-framework` (**public**) |
 | Upload type | `software` — **not** `journal article`: Zenodo cannot describe both in one record |
 | Licence | CC BY 4.0 (code only; the five datasets keep their upstream licences) |
-| Version | `v1.0.0` |
-| Payload | `git archive HEAD` → tracked files only |
+| Version | `v1.1.0` |
+| Payload | `tools/make_deposit.sh` → tracked files, data paths excluded |
 | Metadata | `.zenodo.json` (validated) and `CITATION.cff` |
-| Datasets | **Not** in this deposit — the 371 MB lives in the GitHub release `datasets-v1`. Record that fact in the description, which it already does. |
+| Datasets | **Not** in this deposit — the 500 MB lives in the GitHub release `datasets-v1` and is enumerated in `DATA_SOURCES.md`. |
 
-## Route: API, not the GitHub integration
+## Route: integration or API
 
-The GitHub→Zenodo integration mints a DOI but **requires the repository to be
-public**. The repository is private until the manuscript is accepted, so use the
-API with the token in `IEEETC/.env` (`ZENODO_TOKEN`, 60 chars, scope
-`deposit:write`). The two routes produce the same DOI.
+The GitHub→Zenodo integration mints a DOI automatically when a release is
+published. Use it if the repository is already connected in the Zenodo settings;
+otherwise use the API with the token in `IEEETC/.env` (`ZENODO_TOKEN`, 60 chars,
+scope `deposit:write`). Both routes produce a version DOI plus a concept DOI; the
+concept DOI is the stable one to quote.
 
 ## Sequence
 
-1. **Build the payload from tracked files only.**
+1. **Build the payload with the script, not by hand.**
 
    ```bash
-   git archive --format=tar.gz --prefix=sarai-framework-1.0.0/ \
-       -o /tmp/sarai-framework-1.0.0.tar.gz HEAD
+   tools/make_deposit.sh v1.1.0
    ```
 
-   `git archive` includes only tracked files, so the downloaded bundle and the
-   derived `raw_tables/` are excluded by construction rather than by remembering.
+   It archives `HEAD`, refuses to run on a dirty tree, and then *fails* if the
+   result contains an LFS pointer, a `.env`, a `.git/` directory or a nested
+   archive. Those four checks are the ones that were missing when v1.0.0 was
+   uploaded with 134-byte stubs in it.
 
-   > **Verify, do not trust.** Whether `git archive` expands the Git-LFS files to
-   > real content or emits 134-byte **pointers depends on the local LFS
-   > configuration**. Measured on this machine: with LFS's filters present it
-   > expands (archive 143 MB, `creditcard.csv` = 150,828,752 bytes); with
-   > `filter.lfs.process` cleared it emits pointers (archive 145 KB,
-   > `creditcard.csv` = 134 bytes). A depositor built from pointers is *not*
-   > self-contained. So check explicitly:
+2. **Inspect the payload before uploading.**
 
    ```bash
-   tar -xzOf /tmp/sarai-framework-1.0.0.tar.gz \
-       '*/datasets/sources/financial/creditcard.csv' | wc -c
-   # must be 150828752, not 134
+   tar -tzf dist/sarai-framework-1.1.0.tar.gz | head -40
+   tar -tzf dist/sarai-framework-1.1.0.tar.gz | grep -cE '^\.env$|/\.git/'
+   # must print 0
    ```
 
-   If it reports 134, run `git lfs install` and repeat.
-
-2. **Verify the payload before uploading** (this is where the IEEETC deposit was
-   saved from two mistakes — a committed build artefact and a leaked setting):
-
-   ```bash
-   tar -tzf /tmp/sarai-framework-1.0.0.tar.gz | grep -E '\.env$|\.git/|raw_tables/|\.tar\.gz$'
-   # must print nothing
-   ```
-
-   Then scan the extracted tree for the token **by value**, not by filename, and
-   confirm no `.git/` is present.
+   The archive should be a few hundred KB, because the data paths are
+   `export-ignore` in `.gitattributes` and `DATA_SOURCES.md` says where the data
+   actually is. An archive of several hundred MB means an LFS filter expanded
+   files that the deposit does not licence — do not upload either shape without
+   reading it.
 
 3. **Create the draft** and capture the reserved DOI:
 
@@ -79,11 +77,18 @@ API with the token in `IEEETC/.env` (`ZENODO_TOKEN`, 60 chars, scope
 5. **Upload the file** to `links.bucket`:
 
    ```
-   PUT <bucket>/sarai-framework-1.0.0.tar.gz
+   PUT <bucket>/sarai-framework-1.1.0.tar.gz
    Content-Type: application/octet-stream     ← a JSON content type gives HTTP 415
    ```
 
-6. **Publish**, then compare the uploaded checksum with the local one.
+6. **Publish**, then compare the uploaded checksum with the local one. Zenodo
+   reports an md5; `md5sum dist/sarai-framework-1.1.0.tar.gz` must match it before
+   you publish, not after.
+
+7. **Write the DOI back** into `README.md`, `NOTICE.md`, `CITATION.cff`,
+   `REPRODUCIBILITY.md`, the GitHub repository description and homepage, and the
+   Zenodo `related_identifiers`. A DOI that appears in five places and four of
+   them are wrong is how the last record ended up pointing at itself.
 
 ## Things that bit us last time
 
@@ -102,15 +107,26 @@ API with the token in `IEEETC/.env` (`ZENODO_TOKEN`, 60 chars, scope
 - **A guard should measure substance, not phrasing.** Two checks of mine failed on
   correct input by demanding my own wording. Test for *an addressable identifier*
   rather than a particular sentence.
+- **File size is not evidence of content.** The v1.0.0 payload was 152 KB and
+  looked plausible for a code-only artefact. It was plausible *because* it was
+  wrong: 37 pointers instead of 500 MB of CSVs. Check a member's byte count
+  against the number the manifest promises, and check that no file begins with
+  `version https://git-lfs.github.com/`.
 
-## After the manuscript is accepted
+## After the manuscript is published
 
-1. Make `github.com/WganMe/sarai-framework` public.
-2. Add `related_identifiers` pointing at the repository URL, and at the
-   manuscript's DOI once it exists.
-3. Tag the repository `v1.0.0` so the archived version string matches the tag.
-4. Add the badge and the DOI to `README.md`, `CITATION.cff` and
-   `REPRODUCIBILITY.md`.
+The manuscript is published as Results in Engineering 32 (2026) 113508,
+`10.1016/j.rineng.2026.113508`. That removes every blocker the old plan listed:
+
+1. ~~Make the repository public.~~ Done; it is public.
+2. ~~Add `related_identifiers` to the repository and the manuscript.~~ Both are
+   now in `.zenodo.json`.
+3. ~~Tag the repository so the version matches.~~ Tag `v1.1.0` must exist and its
+   tree must be the one archived.
+4. ~~Add the badge and the DOI.~~ The badge goes in once the DOI resolves. The
+   manuscript itself does **not** cite a Zenodo DOI — its Code availability and
+   Data availability statements name the GitHub URL only — so no erratum is
+   needed for that link, and none should be offered.
 
 ## Open question for the author
 
