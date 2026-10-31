@@ -16,30 +16,37 @@ sovereignty-aware AI risk assessment.
 # Analysis half only — no services needed (~30 s)
 python3 tools/assert_published_values.py
 
-# Full run: fetch the data, start the federated stack, verify the federation
-python3 tools/fetch_datasets.py    # see DATA_SOURCES.md for the three routes
+# Full run: materialise the data, start the federated stack, verify the federation
+git lfs pull                    # or: python3 tools/fetch_datasets.py --only release
 ./reproduce.sh
 ```
 
 ## Data
 
-The five public source datasets are **not** in this tree: 500 MB under three
-different upstream licences, two of them non-commercial. They are frozen as a
-release asset and fetched in one command.
+The five public source datasets are tracked **in Git LFS** — 500 MB under three
+different upstream licences, two of them non-commercial. A plain clone leaves
+134-byte pointers, so materialise them:
 
 ```bash
-python3 tools/fetch_datasets.py --only release   # unmetered, no Kaggle token
+git lfs pull
+```
+
+No LFS quota left, or no LFS at all? The same files are frozen as a release
+asset, and that route is unmetered and needs no Kaggle token:
+
+```bash
+python3 tools/fetch_datasets.py --only release
 ```
 
 [`DATA_SOURCES.md`](DATA_SOURCES.md) documents all three routes, the licence of
-each source, and why the data is not bundled. `datasets/raw_tables/` in the git
-index holds only LFS pointers — those paths are `export-ignore`, so no archive
-of this repository ever claims to ship data it does not contain.
+each source, and why the data is not inside the archives. The dataset paths are
+`export-ignore`, so no archive of this repository ever claims to ship data it
+does not contain.
 
-`framework/real_infra_load.py` builds the canonical form from the source CSVs:
-8 fact tables in PostgreSQL and 14 dimension tables in MariaDB.
-`datasets/raw_tables_manifest.json` records the expected row and column count of
-each, so a reader can check their build against the reported one.
+`datasets/raw_tables/` is also tracked, as the 22 tables the benchmark queries
+directly. `datasets/raw_tables_manifest.json` records the expected row and column
+count of each, so a reader can check their copy against the reported one;
+`framework/real_infra_load.py` rebuilds all 22 from the source CSVs if needed.
 
 ## Included
 

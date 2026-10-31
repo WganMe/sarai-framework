@@ -1,28 +1,31 @@
 # Where the data is, and how to obtain it
 
-This repository is the **code**. It does not redistribute the benchmark data.
-That is a licensing decision, not an oversight, and it is why an archive of this
-repository is small: see [Why the data is not in the tree](#why-the-data-is-not-in-the-tree).
+This repository is the **code**. The benchmark data is tracked separately, in Git
+LFS, and is deliberately absent from every archive of the repository. That is a
+licensing decision, not an oversight, and it is why an archive here is small: see
+[Why the data is not inside an archive](#why-the-data-is-not-inside-an-archive).
 
 Every file the benchmark reads is reachable from a permanent address listed here.
-`tools/fetch_datasets.py` automates all three routes.
+There are three routes; `tools/fetch_datasets.py` automates all of them.
 
 ## The two forms of the data
 
 | Form | What it is | Where |
 | --- | --- | --- |
-| **Source CSVs** | The five public datasets exactly as published upstream. 500 MB, 15 files. | GitHub release [`datasets-v1`](https://github.com/WganMe/sarai-framework/releases/tag/datasets-v1), asset `sarai-datasets-v1.tar.gz` (143 MiB) |
-| **Federated tables** | The 22 tables the benchmark actually queries: 8 PostgreSQL fact tables + 14 MariaDB dimension tables. | Produced from the source CSVs by `framework/real_infra_load.py`, which carries typed DDL for all 22 |
+| **Source CSVs** | The five public datasets exactly as published upstream. 500 MB, 15 files. | Git LFS (`datasets/sources/`), **and** GitHub release [`datasets-v1`](https://github.com/WganMe/sarai-framework/releases/tag/datasets-v1), asset `sarai-datasets-v1.tar.gz` (143 MiB) |
+| **Federated tables** | The 22 tables the benchmark actually queries: 8 PostgreSQL fact tables + 14 MariaDB dimension tables. | Git LFS (`datasets/raw_tables/`), or rebuilt from the source CSVs by `framework/real_infra_load.py`, which carries typed DDL for all 22 |
 
 The second form is derived. `datasets/raw_tables_manifest.json` records the
 expected shape of every table — name, row count and column count — so a reader
-can check their own build against the one the manuscript reports.
+can check their own copy against the one the manuscript reports. Measured on a
+full `git lfs pull`: all 22 row counts match the manifest, and all 15 source CSVs
+are byte-identical to the frozen release asset.
 
-> **`datasets/raw_tables/` in the git index holds LFS pointers, not data.**
-> Those entries are marked `export-ignore` in `.gitattributes`, so they never
-> appear in an archive. This is deliberate: an archive containing 134-byte
-> pointer files would look complete and be silently empty. The v1.0.0 Zenodo
-> payload made exactly that mistake and was withdrawn.
+> **Both data directories are marked `export-ignore` in `.gitattributes`, so they
+> never appear in an archive.** This is deliberate: an archive containing 134-byte
+> LFS pointer files would look complete and be silently empty. The v1.0.0 Zenodo
+> payload made exactly that mistake and was withdrawn. A clone, by contrast, does
+> have the files — as pointers until `git lfs pull` runs.
 
 ## Route 1 — the frozen release asset (recommended)
 
@@ -51,10 +54,12 @@ cd sarai-framework
 git lfs pull
 ```
 
-> **This route is currently unavailable.** The repository's LFS bandwidth
-> budget is exhausted, so `git lfs pull` fails with *"This repository exceeded
-> its LFS budget"*. Use Route 1 or Route 3 until that is resolved. LFS bandwidth
-> is metered against the repository owner and resets monthly.
+> **LFS bandwidth is metered against the repository owner** and resets monthly
+> (10 GiB on Free and Pro alike, and CI downloads count against it). A clone can
+> therefore fail with *"this repository exceeded its LFS budget"* near the end
+> of a month even though the route itself is sound — that is a quota event, not a
+> broken repository. Route 1 needs no quota at all and is the one to use when
+> this happens.
 
 ## Route 3 — upstream, with `tools/fetch_datasets.py`
 
@@ -83,7 +88,7 @@ Machine-readable provenance, including a row-count total per domain and the
 table-name pattern each source feeds, is in
 [`datasets/metadata/dataset_provenance_registry.csv`](datasets/metadata/dataset_provenance_registry.csv).
 
-## Why the data is not in the tree
+## Why the data is not inside an archive
 
 Two reasons, and neither is storage:
 

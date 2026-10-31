@@ -71,10 +71,12 @@ asset: four of the five sources need a Kaggle token, and only the UCI one does
 not. [`DATA_SOURCES.md`](DATA_SOURCES.md) documents all three routes and the
 licence of each source.
 
-> **`datasets/raw_tables/` in the git index holds LFS pointers, not data**, and
-> the LFS bandwidth budget is currently exhausted, so `git lfs pull` fails. The
-> dataset paths are marked `export-ignore`, so no archive of this repository
-> claims to ship them. Route 1 above needs neither LFS nor a Kaggle token.
+> **`datasets/raw_tables/` is tracked in Git LFS, so a plain clone leaves pointers
+> until `git lfs pull` runs.** The dataset paths are marked `export-ignore`, so no
+> archive of this repository claims to ship them. LFS downloads are metered
+> against the owner's monthly quota; when that is exhausted the command fails with
+> *"this repository exceeded its LFS budget"*, and Route 1 above needs neither LFS
+> nor a Kaggle token.
 
 ## What is deliberately *not* covered, and why
 
